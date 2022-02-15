@@ -8,6 +8,7 @@
 #include <avr/interrupt.h>
 
 #define ATOMV 3.226
+#define SCREEN_REFRESH 16
 
 
 void adc_init(void);
@@ -28,7 +29,7 @@ uint8_t updateDisplay = 1;
 
 
 ISR(WDT_vect) {
-    updateDisplay = 1;
+    updateDisplay++;
 }
 
 
@@ -64,7 +65,7 @@ int main() {
     while(1) {
 
 
-        if(updateDisplay == 1) {
+        if((updateDisplay % SCREEN_REFRESH) == 0) {
             updateDisplay = 0;
 
             //clear screen
