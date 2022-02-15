@@ -4,6 +4,8 @@
 #include "ili934x.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
 
 #define ATOMV 3.226
 
@@ -11,11 +13,27 @@
 void adc_init(void);
 uint16_t read_adc(uint8_t channel);
 
-void watchdog_init(void);
 
 
 //screen functions
 void draw_bar(uint16_t value, uint8_t colour);
+
+void watchdog_init(void);
+
+
+
+
+uint8_t updateDisplay = 1;
+
+
+
+ISR(WDT_vect) {
+    updateDisplay = 1;
+}
+
+
+
+
 
 
 int main() {
@@ -24,7 +42,14 @@ int main() {
     set_orientation(North);
     clear_screen();
 
+    display_string("Hello World!");
+
+    _delay_ms(2000);
+
     adc_init();
+    watchdog_init();
+
+    sei();
 
     int i;
 
@@ -38,45 +63,67 @@ int main() {
 
     while(1) {
 
-        //clear screen
-        //clear_screen();
 
-        //only refresh changed area
-        fill_rectangle(refreshArea, display.background);
+        if(updateDisplay == 1) {
+            updateDisplay = 0;
 
-        //set display cursor to top left
-        display.x = 0;
-        display.y = 0;
+            //clear screen
+            //clear_screen();
 
-        for(i=0; i<8; i++) {
+            //only refresh changed area
+            fill_rectangle(refreshArea, display.background);
 
-            char num[6];
-
-            //output as raw 10-bit
-            uint16_t temp = read_adc(i);
-            itoa(temp, num, 10);
-
-            //output as float voltage
-            //float temp = read_adc(i) * ATOMV;
-            //itoa(temp, num, 10);
-
-            //write to display
-            display_string("ADC: ");
-            display_string(num);
-            //display_string(" mV");
-
-            display.x = 100;
-            draw_bar(temp, GREEN);
-
-            //move display cursor to start of next line
-            display.y += 10;
+            //set display cursor to top left
             display.x = 0;
+            display.y = 0;
+
+            for(i=0; i<8; i++) {
+
+                char num[6];
+
+                //output as raw 10-bit
+                uint16_t temp = read_adc(i);
+                itoa(temp, num, 10);
+
+                //output as float voltage
+                //float temp = read_adc(i) * ATOMV;
+                //itoa(temp, num, 10);
+
+                //write to display
+                display_string("ADC: ");
+                display_string(num);
+                //display_string(" mV");
+
+                display.x = 100;
+                draw_bar(temp, GREEN);
+
+                //move display cursor to start of next line
+                display.y += 10;
+                display.x = 0;
+            }
         }
 
-        _delay_ms(200);
+        _delay_ms(2);
     }
     
     return 1;
+}
+
+
+
+
+void watchdog_init(void) {
+    
+    MCUSR &= ~_BV(WDRF);        //disable watchdog reset
+    WDTCSR |= _BV(WDCE);        //set watchdog change enable
+
+    WDTCSR = 0x00;
+
+    //WDTCSR |= _BV(WDCE);        //watchdog change enable
+    
+    WDTCSR |= _BV(WDIE);        //enable watchdog interrupt
+    WDTCSR |= _BV(WDP2);        //set prescaler to 64k (0.5s)
+    WDTCSR |= _BV(WDP0);
 }
 
 
