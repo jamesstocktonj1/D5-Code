@@ -11,6 +11,12 @@
 void adc_init(void);
 uint16_t read_adc(uint8_t channel);
 
+void watchdog_init(void);
+
+
+//screen functions
+void draw_bar(uint16_t value, uint8_t colour);
+
 
 int main() {
 
@@ -26,8 +32,8 @@ int main() {
     rectangle refreshArea;
     refreshArea.top = 0;
     refreshArea.left = 0;
-    refreshArea.bottom = 100;
-    refreshArea.right = 752;
+    refreshArea.bottom = LCDHEIGHT / 2;
+    refreshArea.right = LCDWIDTH;
     
 
     while(1) {
@@ -47,24 +53,27 @@ int main() {
             char num[6];
 
             //output as raw 10-bit
-            //uint16_t temp = read_adc(i);
-            //itoa(temp, num, 10);
+            uint16_t temp = read_adc(i);
+            itoa(temp, num, 10);
 
             //output as float voltage
-            float temp = read_adc(i) * ATOMV;
-            itoa(temp, num, 10);
+            //float temp = read_adc(i) * ATOMV;
+            //itoa(temp, num, 10);
 
             //write to display
             display_string("ADC: ");
             display_string(num);
-            display_string(" mV");
+            //display_string(" mV");
+
+            display.x = 100;
+            draw_bar(temp, GREEN);
 
             //move display cursor to start of next line
             display.y += 10;
             display.x = 0;
         }
 
-        _delay_ms(100);
+        _delay_ms(200);
     }
     
     return 1;
@@ -113,4 +122,27 @@ uint16_t read_adc(uint8_t channel) {
     uint8_t upperRegister = ADCH;       //read upper register
 
     return (upperRegister << 2) + (lowerRegister >> 6);         //convert lower/upper register to 10-bit number
+}
+
+
+
+
+void draw_bar(uint16_t value, uint8_t colour) {
+    
+
+    //store current position of cursor
+    uint16_t curX, curY;
+    curX = display.x;
+    curY = display.y;
+
+    //setup rectangle
+    rectangle bar;
+    bar.top = curY;
+    bar.left = curX;
+    bar.bottom = curY + 7;
+
+    value = value / 4;
+    bar.right = curX + value;
+
+    fill_rectangle(bar, colour);
 }
