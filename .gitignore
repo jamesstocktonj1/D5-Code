@@ -33,6 +33,6 @@
 *.app
 *.elf
 *.hex
-#*.bat
+*.bat
 
 makefile
