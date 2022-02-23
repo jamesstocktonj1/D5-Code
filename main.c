@@ -1,38 +1,32 @@
 #include <avr/io.h>
 #include <util/delay.h>
-#include "lcd.h"
-#include "ili934x.h"
+#include "lib/lcd.h"
+#include "lib/ili934x.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <avr/wdt.h>
 #include <avr/interrupt.h>
+#include "io.h"
 
 #define ATOMV 3.226
+
+#define ADC_REFRESH 4
+
+#define BUFFER_SIZE 32
+
 #define SCREEN_REFRESH 16
 
-
-void adc_init(void);
-uint16_t read_adc(uint8_t channel);
 
 
 
 //screen functions
 void draw_bar(uint16_t value, uint8_t colour);
 
-void watchdog_init(void);
+void init_timers(void);
 
 
 
 
 uint8_t updateDisplay = 1;
-
-
-
-ISR(WDT_vect) {
-    updateDisplay++;
-}
-
-
 
 
 
@@ -47,8 +41,7 @@ int main() {
 
     _delay_ms(2000);
 
-    adc_init();
-    watchdog_init();
+    init_timers();
 
     sei();
 
@@ -113,65 +106,10 @@ int main() {
 
 
 
-void watchdog_init(void) {
+void init_timers() {
     
-    MCUSR &= ~_BV(WDRF);        //disable watchdog reset
-    WDTCSR |= _BV(WDCE);        //set watchdog change enable
 
-    WDTCSR = 0x00;
-
-    //WDTCSR |= _BV(WDCE);        //watchdog change enable
-    
-    WDTCSR |= _BV(WDIE);        //enable watchdog interrupt
-    WDTCSR |= _BV(WDP2);        //set prescaler to 64k (0.5s)
-    WDTCSR |= _BV(WDP0);
 }
-
-
-
-void adc_init() {
-
-    int i;
-
-    //initialise pins A0-A8 as inputs
-    for(i=0; i<8; i++) {
-        DDRA &= ~_BV(i);
-    }
-
-    //setup mux register
-    ADMUX = 0;                  //set mux channel to 0
-    ADMUX |= _BV(REFS0);        //AVCC reference
-    ADMUX |= _BV(ADLAR);        //left to right data
-
-    //setup control register A
-    ADCSRA |= _BV(ADPS2);       //set prescaler to 16
-    //ADCSRA |= _BV(ADATE);       //auto trigger
-	ADCSRA |= _BV(ADEN);		//enable adcs
-    //ADCSRA |= _BV(ADIF);        //interrupt flag
-	ADCSRA |= _BV(ADSC);	      //start conversion
-
-    //setup control register B
-	ADCSRB = 0;
-}
-
-
-
-uint16_t read_adc(uint8_t channel) {
-    
-    ADMUX = channel;            //set mux to channel number
-    ADMUX |= _BV(REFS0);        //AVCC reference
-    ADMUX |= _BV(ADLAR);        //left to right data
-
-    ADCSRA |= _BV(ADSC);        //start conversion
-
-    while(ADCSRA & _BV(ADSC));  //wait for end of conversion
-
-    uint8_t lowerRegister = ADCL;       //read lower register
-    uint8_t upperRegister = ADCH;       //read upper register
-
-    return (upperRegister << 2) + (lowerRegister >> 6);         //convert lower/upper register to 10-bit number
-}
-
 
 
 
