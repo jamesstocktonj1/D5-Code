@@ -1,4 +1,5 @@
 #include "io.h"
+#include <avr/io.h>
 
 
 
@@ -95,10 +96,12 @@ void set_battery_state(battery state) {
         case DISCHARGING:
             set_battery_charge(0);
             set_battery_discharge(1);
+            break;
 
         default:
             set_battery_charge(0);
             set_battery_discharge(0);
+            break;
     }
 }
 
