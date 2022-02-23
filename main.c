@@ -21,10 +21,9 @@
 //screen functions
 void draw_bar(uint16_t value, uint8_t colour);
 
+
+
 void init_timers(void);
-
-
-
 
 uint8_t updateDisplay = 1;
 
@@ -33,17 +32,23 @@ uint8_t updateDisplay = 1;
 
 int main() {
 
+    //initialise screen (and set orientation)
     init_lcd();
     set_orientation(North);
     clear_screen();
 
+    //splash screen
     display_string("Hello World!");
 
     _delay_ms(2000);
 
-    init_timers();
+    //init_timers();
 
-    sei();
+    //sei();
+
+    init_adc();
+    init_pins();
+
 
     int i;
 
@@ -58,7 +63,7 @@ int main() {
     while(1) {
 
 
-        if((updateDisplay % SCREEN_REFRESH) == 0) {
+        if(1) {
             updateDisplay = 0;
 
             //clear screen
@@ -80,6 +85,7 @@ int main() {
                 itoa(temp, num, 10);
 
                 //output as float voltage
+
                 //float temp = read_adc(i) * ATOMV;
                 //itoa(temp, num, 10);
 
@@ -97,7 +103,7 @@ int main() {
             }
         }
 
-        _delay_ms(2);
+        _delay_ms(500);
     }
     
     return 1;
@@ -114,21 +120,16 @@ void init_timers() {
 
 
 void draw_bar(uint16_t value, uint8_t colour) {
-    
 
-    //store current position of cursor
-    uint16_t curX, curY;
-    curX = display.x;
-    curY = display.y;
+    //convert 0-1024 to 0-128
+    value = value / 4;
 
     //setup rectangle
     rectangle bar;
-    bar.top = curY;
-    bar.left = curX;
-    bar.bottom = curY + 7;
-
-    value = value / 4;
-    bar.right = curX + value;
-
+    bar.top = display.y;
+    bar.left = display.x;
+    bar.bottom = display.y + 7;
+    bar.right = display.x + value;
+    
     fill_rectangle(bar, colour);
 }
