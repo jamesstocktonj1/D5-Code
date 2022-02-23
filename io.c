@@ -5,9 +5,10 @@
 
 
 void init_pins() {
+    int i;
 
     //set pins 0-7 on port C to outputs
-    for(int i=0; i<8; i++) {
+    for(i=0; i<8; i++) {
         DDRC |= _BV(i);
     }
 }
@@ -67,7 +68,7 @@ uint16_t get_busbar_voltage() {
 
 uint16_t get_busbar_current() {
 
-    return read_adc(BUSBAR_CURRET);
+    return read_adc(BUSBAR_CURRENT);
 }
 
 uint16_t get_wind_capacity() {
