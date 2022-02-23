@@ -10,21 +10,25 @@
 #define ATOMV 3.226
 
 #define ADC_REFRESH 4
-
-#define BUFFER_SIZE 32
-
 #define SCREEN_REFRESH 16
 
+//graphics constants
+#define HALF_WIDTH LCDWIDTH / 2
+#define QUARTER_WIDTH LCDWIDTH / 4
 
 
 
-//screen functions
+
+//graphics functions
 void draw_bar(uint16_t value, uint16_t colour);
 void draw_battery_state(battery state);
 void draw_indicator(uint8_t state);
 
-
+//initialise millisecond timer
 void init_timers(void);
+volatile uint32_t millis_timer;
+
+
 
 uint8_t updateDisplay = 1;
 
@@ -66,6 +70,7 @@ int main() {
 
     while(1) {
 
+        set_load1(state);
 
         if(1) {
             updateDisplay = 0;
@@ -98,7 +103,7 @@ int main() {
                 display_string(num);
                 //display_string(" mV");
 
-                display.x = 100;
+                display.x = HALF_WIDTH;
                 draw_bar(temp, GREEN);
 
                 //move display cursor to start of next line
@@ -115,7 +120,7 @@ int main() {
                 display_string(num);
                 display_string(": ");
 
-                display.x = 100;
+                display.x = HALF_WIDTH;
                 draw_indicator(state);
 
                 display.y += 10;
@@ -123,7 +128,7 @@ int main() {
             }
 
             display_string("Battery State:");
-            display.x = 100;
+            display.x = HALF_WIDTH;
 
             draw_battery_state(bat_state);
         }
