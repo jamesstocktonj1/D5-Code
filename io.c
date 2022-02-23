@@ -100,3 +100,70 @@ void set_battery_state(battery state) {
             set_battery_discharge(0);
     }
 }
+
+
+void set_battery_charge(uint8_t state) {
+
+    if(state) {
+        PORTC |= _BV(CHARGE_BATTERY);
+    }
+    else {
+        PORTC &= ~_BV(CHARGE_BATTERY);
+    }
+}
+
+void set_battery_discharge(uint8_t state) {
+
+    if(state) {
+        PORTC |= _BV(DISCHARGE_BATTERY);
+    }
+    else {
+        PORTC &= ~_BV(DISCHARGE_BATTERY);
+    }
+}
+
+void set_load1(uint8_t state) {
+
+    if(state) {
+        PORTC |= _BV(SWITCH_LOAD1);
+    }
+    else {
+        PORTC &= ~_BV(SWITCH_LOAD1);
+    }
+}
+
+void set_load2(uint8_t state) {
+
+    if(state) {
+        PORTC |= _BV(SWITCH_LOAD2);
+    }
+    else {
+        PORTC &= ~_BV(SWITCH_LOAD2);
+    }
+}
+
+void set_load3(uint8_t state) {
+
+    if(state) {
+        PORTC |= _BV(SWITCH_LOAD3);
+    }
+    else {
+        PORTC &= ~_BV(SWITCH_LOAD3);
+    }
+}
+
+
+uint8_t get_load1(void) {
+
+    return (PINC & _BV(CALL_LOAD1));
+}
+
+uint8_t get_load2(void) {
+
+    return (PINC & _BV(CALL_LOAD2));
+}
+
+uint8_t get_load3(void) {
+
+    return (PINC & _BV(CALL_LOAD3));
+}
