@@ -9,13 +9,14 @@
 
 #define ATOMV 3.226
 
-#define ADC_REFRESH 4
-#define SCREEN_REFRESH 16
+#define MILLIS_VALUE 68
+
+#define ADC_REFRESH 100
+#define SCREEN_REFRESH 500
 
 //graphics constants
 #define HALF_WIDTH LCDWIDTH / 2
 #define QUARTER_WIDTH LCDWIDTH / 4
-
 
 
 
@@ -25,12 +26,17 @@ void draw_battery_state(battery state);
 void draw_indicator(uint8_t state);
 
 //initialise millisecond timer
-void init_timers(void);
+void init_timer(void);
 volatile uint32_t millis_timer;
 
 
 
-uint8_t updateDisplay = 1;
+ISR(TIMER0_OVF_vect) {
+    millis_timer++;
+
+    TCNT0 = MILLIS_VALUE;   //set count register value
+}
+
 
 
 
@@ -47,9 +53,9 @@ int main() {
 
     _delay_ms(2000);
 
-    //init_timers();
+    init_timer();
 
-    //sei();
+    sei();
 
     init_adc();
     init_pins();
@@ -70,11 +76,14 @@ int main() {
 
     while(1) {
 
-        set_load1(state);
+        if((millis_timer % 1000) == 0) {
+
+            state = !state;
+            //set_load1(state);
+        }
+        
 
         if(1) {
-            updateDisplay = 0;
-
             //clear screen
             //clear_screen();
 
@@ -131,9 +140,20 @@ int main() {
             display.x = HALF_WIDTH;
 
             draw_battery_state(bat_state);
+
+
+
+            display.y += 20;
+            display.x = 0;
+
+            char num[8];
+            ltoa(millis_timer, num, 10);
+
+            display_string("Timer Value: ");
+            display_string(num);
         }
 
-        state = !state;
+        //state = !state;
 
         switch(bat_state) {
 
@@ -159,9 +179,19 @@ int main() {
 
 
 
-void init_timers() {
-    
+void init_timer() {
 
+    //set to normal mode, no output
+    TCCR0A = 0x00;
+
+    //clear register
+    TCCR0B = 0x00;
+
+    TCCR0B |= _BV(CS00) | _BV(CS01);        //set 64 clock divide
+
+    TIMSK0 |= _BV(TOIE0);                    //enable overflow interrupt
+    
+    TCNT0 = MILLIS_VALUE;                   //set count register value
 }
 
 
