@@ -34,6 +34,9 @@ void draw_screen(void);
 void init_timer(void);
 volatile uint32_t millis_timer;
 
+uint8_t state = 0;
+battery bat_state = CHARGING;
+
 
 
 ISR(TIMER0_OVF_vect) {
@@ -68,18 +71,6 @@ int main() {
     _delay_ms(2000);
 
     
-    int i;
-
-    //setup refresh area rectangle
-    rectangle refreshArea;
-    refreshArea.top = 0;
-    refreshArea.left = 0;
-    refreshArea.bottom = LCDHEIGHT / 2;
-    refreshArea.right = LCDWIDTH;
-    
-    uint8_t state = 0;
-
-    battery bat_state = CHARGING;
 
     while(1) {
 
@@ -136,6 +127,9 @@ void init_timer() {
     TIMSK0 |= _BV(TOIE0);                    //enable overflow interrupt
     
     TCNT0 = MILLIS_VALUE;                   //set count register value
+
+    //set timer variable to 0
+    millis_timer = 0;
 }
 
 
@@ -206,6 +200,13 @@ void draw_indicator(uint8_t state) {
 
 void draw_screen() {
 
+    //setup refresh area rectangle
+    rectangle refreshArea;
+    refreshArea.top = 0;
+    refreshArea.left = 0;
+    refreshArea.bottom = LCDHEIGHT / 2;
+    refreshArea.right = LCDWIDTH;
+
     //clear screen
     //clear_screen();
 
@@ -215,6 +216,8 @@ void draw_screen() {
     //set display cursor to top left
     display.x = 0;
     display.y = 0;
+
+    int i;
 
     for(i=0; i<8; i++) {
 
