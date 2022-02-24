@@ -18,12 +18,17 @@
 #define HALF_WIDTH LCDWIDTH / 2
 #define QUARTER_WIDTH LCDWIDTH / 4
 
+#define HALF_HEIGHT LCDHEIGHT / 2
+#define QUARTER_HEIGHT LCDHEIGHT / 4
+
 
 
 //graphics functions
 void draw_bar(uint16_t value, uint16_t colour);
 void draw_battery_state(battery state);
 void draw_indicator(uint8_t state);
+
+void draw_screen(void);
 
 //initialise millisecond timer
 void init_timer(void);
@@ -48,19 +53,21 @@ int main() {
     set_orientation(North);
     clear_screen();
 
+
+    //initialise io (io.h)
+    init_adc();
+    init_pins();
+
+    //init timer
+    init_timer();
+    sei();
+
     //splash screen
     display_string("Hello World!");
 
     _delay_ms(2000);
 
-    init_timer();
-
-    sei();
-
-    init_adc();
-    init_pins();
-
-
+    
     int i;
 
     //setup refresh area rectangle
@@ -79,98 +86,35 @@ int main() {
         if((millis_timer % 1000) == 0) {
 
             state = !state;
-            //set_load1(state);
+            set_load1(state);
+
+            switch(bat_state) {
+
+                case CHARGING:
+                    bat_state = DISCHARGING;
+                    break;
+
+                case DISCHARGING:
+                    bat_state = DISCONNECTED;
+                    break;
+
+                default:
+                    bat_state = CHARGING;
+                    break;
+            }
         }
         
 
-        if(1) {
-            //clear screen
-            //clear_screen();
-
-            //only refresh changed area
-            fill_rectangle(refreshArea, display.background);
-
-            //set display cursor to top left
-            display.x = 0;
-            display.y = 0;
-
-            for(i=0; i<8; i++) {
-
-                char num[6];
-
-                //output as raw 10-bit
-                uint16_t temp = read_adc(i);
-                itoa(temp, num, 10);
-
-                //output as float voltage
-
-                //float temp = read_adc(i) * ATOMV;
-                //itoa(temp, num, 10);
-
-                //write to display
-                display_string("ADC: ");
-                display_string(num);
-                //display_string(" mV");
-
-                display.x = HALF_WIDTH;
-                draw_bar(temp, GREEN);
-
-                //move display cursor to start of next line
-                display.y += 10;
-                display.x = 0;
-            }
-
-            for(i=0; i<4; i++) {
-
-                char num[1];
-                itoa(i, num, 10);
-
-                display_string("Indicator ");
-                display_string(num);
-                display_string(": ");
-
-                display.x = HALF_WIDTH;
-                draw_indicator(state);
-
-                display.y += 10;
-                display.x = 0;
-            }
-
-            display_string("Battery State:");
-            display.x = HALF_WIDTH;
-
-            draw_battery_state(bat_state);
-
-
-
-            display.y += 20;
-            display.x = 0;
-
-            char num[8];
-            ltoa(millis_timer, num, 10);
-
-            display_string("Timer Value: ");
-            display_string(num);
+        if((millis_timer % SCREEN_REFRESH) == 0) {
+            
+            draw_screen();
         }
 
         //state = !state;
 
-        switch(bat_state) {
+        
 
-            case CHARGING:
-                bat_state = DISCHARGING;
-                break;
-
-            case DISCHARGING:
-                bat_state = DISCONNECTED;
-                break;
-
-            default:
-                bat_state = CHARGING;
-                break;
-        }
-
-        _delay_ms(500);
+        _delay_ms(1);
     }
     
     return 1;
@@ -256,4 +200,77 @@ void draw_indicator(uint8_t state) {
 
     //draw indicator
     fill_rectangle(ind, col);
+}
+
+
+
+void draw_screen() {
+
+    //clear screen
+    //clear_screen();
+
+    //only refresh changed area
+    fill_rectangle(refreshArea, display.background);
+
+    //set display cursor to top left
+    display.x = 0;
+    display.y = 0;
+
+    for(i=0; i<8; i++) {
+
+        char num[6];
+
+        //output as raw 10-bit
+        uint16_t temp = read_adc(i);
+        itoa(temp, num, 10);
+
+        //output as float voltage
+
+        //float temp = read_adc(i) * ATOMV;
+        //itoa(temp, num, 10);
+
+        //write to display
+        display_string("ADC: ");
+        display_string(num);
+        //display_string(" mV");
+
+        display.x = HALF_WIDTH;
+        draw_bar(temp, GREEN);
+
+        //move display cursor to start of next line
+        display.y += 10;
+        display.x = 0;
+    }
+
+    for(i=0; i<4; i++) {
+
+        char num[1];
+        itoa(i, num, 10);
+
+        display_string("Indicator ");
+        display_string(num);
+        display_string(": ");
+
+        display.x = HALF_WIDTH;
+        draw_indicator(state);
+
+        display.y += 10;
+        display.x = 0;
+    }
+
+    display_string("Battery State:");
+    display.x = HALF_WIDTH;
+
+    draw_battery_state(bat_state);
+
+
+
+    display.y += 20;
+    display.x = 0;
+
+    char num[8];
+    ltoa(millis_timer, num, 10);
+
+    display_string("Timer Value: ");
+    display_string(num);
 }
