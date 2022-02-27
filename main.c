@@ -21,10 +21,21 @@
 #define HALF_HEIGHT LCDHEIGHT / 2
 #define QUARTER_HEIGHT LCDHEIGHT / 4
 
+#define COLUMN2 100
+
+//define colours
+#define ORANGE 0xFD00
+
+//define colour thresholds for tricolour bar
+#define RED_THRESHOLD 870           //aprox 85%
+#define ORANGE_THRESHOLD 717        //aprox 70%
+
 
 
 //graphics functions
 void draw_bar(uint16_t value, uint16_t colour);
+void draw_tricolour_bar(uint16_t value);
+void draw_signed_bar(int16_t value, uint16_t colour);
 void draw_battery_state(battery state);
 void draw_indicator(uint8_t state);
 
@@ -147,6 +158,38 @@ void draw_bar(uint16_t value, uint16_t colour) {
     bar.right = display.x + value;
     
     fill_rectangle(bar, colour);
+}
+
+void draw_tricolour_bar(uint16_t value) {
+
+    uint16_t colour = GREEN;
+
+    if(value > RED_THRESHOLD) {
+        colour = RED;
+    }
+    else if(value > ORANGE_THRESHOLD) {
+        colour = ORANGE;
+    }
+
+    draw_bar(value, colour);
+}
+
+void draw_signed_bar(int16_t value, uint16_t colour) {
+
+    //converty +-512 to +-64
+    value = value / 4;
+
+    //setup rectangle
+    rectangle bar;
+    bar.top = display.y;
+    bar.bottom = display.y + 7;
+
+    //sets the l/r coords depending on whether the value is positive or negative
+    bar.left    = (value < 0) ? display.x + 64 + value : display.x + 64;
+    bar.right   = (value < 0) ? display.x + 64 : display.x + 64 + value;
+
+    fill_rectangle(bar, colour);
+
 }
 
 void draw_battery_state(battery state) {
