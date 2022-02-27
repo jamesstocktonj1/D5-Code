@@ -51,7 +51,7 @@ void read_inputs(void);
 void write_outputs(void);
 
 
-//main states
+//main global values
 //analog input values
 uint16_t mains_capacity;
 uint16_t busbar_voltage, busbar_current;
@@ -62,7 +62,7 @@ uint8_t load1_call, load2_call, load3_call;
 
 //digital output values
 uint8_t load1, load2, load3;
-battery bat_state = CHARGING;
+battery battery_state = DISCONNECTED;
 
 
 
@@ -365,5 +365,5 @@ void write_outputs(void) {
     set_load2(load2);
     set_load3(load3);
 
-    set_battery_state(bat_state);
+    set_battery_state(battery_state);
 }
