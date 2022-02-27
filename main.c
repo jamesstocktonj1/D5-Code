@@ -21,7 +21,7 @@
 #define HALF_HEIGHT LCDHEIGHT / 2
 #define QUARTER_HEIGHT LCDHEIGHT / 4
 
-#define COLUMN2 100
+#define COLUMN 100
 
 //define colours
 #define ORANGE 0xFD00
@@ -45,7 +45,23 @@ void draw_screen(void);
 void init_timer(void);
 volatile uint32_t millis_timer;
 
-uint8_t state = 0;
+
+//runs io functions
+void read_inputs(void);
+void write_outputs(void);
+
+
+//main states
+//analog input values
+uint16_t mains_capacity;
+uint16_t busbar_voltage, busbar_current;
+uint16_t wind_capacity, solar_capacity;
+
+//digital input values
+uint8_t load1_call, load2_call, load3_call;
+
+//digital output values
+uint8_t load1, load2, load3;
 battery bat_state = CHARGING;
 
 
@@ -240,7 +256,6 @@ void draw_indicator(uint8_t state) {
 }
 
 
-
 void draw_screen() {
 
     //setup refresh area rectangle
@@ -319,4 +334,36 @@ void draw_screen() {
 
     display_string("Timer Value: ");
     display_string(num);
+}
+
+
+
+void read_inputs(void) {
+
+    //read analog values
+    mains_capacity = get_mains_capacity();
+
+    busbar_voltage = get_busbar_voltage();
+    busbar_current = get_busbar_current();
+
+    wind_capacity = get_wind_capacity();
+    solar_capacity = get_solar_capacity();
+
+
+    //read digital values
+    load1_call = get_load1();
+    load2_call = get_load2();
+    load3_call = get_load3();
+}
+
+
+
+void write_outputs(void) {
+
+    //set output values
+    set_load1(load1);
+    set_load2(load2);
+    set_load3(load3);
+
+    set_battery_state(bat_state);
 }
