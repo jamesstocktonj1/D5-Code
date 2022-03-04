@@ -54,7 +54,7 @@ float evaluate(struct test a)
 
     printf("Battery Integral: %d, Battery Score: %2.2f%%\n", a.BatteryIntegral, batteryScore);
 
-    return (batteryScore / (float)100) * ((float)35 / (float)65 * houseScore + (float)30 / (float)65 * mainsScore);
+    return (batteryScore / 100.0) * (35.0 / 65.0 * houseScore + 30.0 / 65.0 * mainsScore);
 }
 
 int algorithm(struct test a, int i)
