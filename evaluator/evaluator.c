@@ -9,7 +9,7 @@ short int DBattery = 0;
 float MainsReq = 0;
 
 float evaluate(struct test a);
-void algorithm(struct test a, int i);
+int algorithm(struct test a, int i);
 
 int main()
 {
@@ -29,23 +29,36 @@ float evaluate(struct test a)
 {
     for (int i = 0; i < 24; i++)
     {
-        algorithm(a, i);
+        a.HousesSaved -= algorithm(a, i);
         a.MainsDraw += MainsReq;
         a.BatteryIntegral += CBattery - DBattery;
     }
     float houseScore = (a.HousesSaved) / 2.5;
     float mainsScore = (240 - a.MainsDraw) / 2.4;
-    float batteryScore = (24 - a.BatteryIntegral) / 0.24;
 
     printf("Houses Saved: %d, Houses Score: %2.2f%%\n", a.HousesSaved, houseScore);
     printf("Mains Draw: %2.1f, Mains Score: %2.2f%%\n", a.MainsDraw/5, mainsScore);
-    printf("Battery Integral: %d, Battery Score: %2.2f%%\n", a.MainsDraw, mainsScore);
 
-    return batteryScore / 100 * (35 / 65 * houseScore + 30 / 65 * mainsScore);
+        float batteryScore;
+        
+        if (a.BatteryIntegral < 0)
+        {
+            batteryScore = 0;
+        }
+        else
+        {
+            batteryScore = (24 - a.BatteryIntegral) / 0.24;
+        }
+
+    printf("Battery Integral: %d, Battery Score: %2.2f%%\n", a.BatteryIntegral, batteryScore);
+
+    return (batteryScore / 100 * (35 / 65 * houseScore + 30 / 65 * mainsScore));
 }
 
-void algorithm(struct test a, int i)
+int algorithm(struct test a, int i)
 {
+    int housesLost =0; 
+
     CBattery = 0;
     DBattery = 0;
     MainsReq = 0;
@@ -76,14 +89,14 @@ void algorithm(struct test a, int i)
         CBattery = 0;
         DBattery = 1;
         MainsReq = 5 * (PowerDeficit - DBattery - 0.8);
-        a.HousesSaved -= 1;
+        housesLost = 1;
     }
     else if (PowerDeficit <= 4)
     {
         CBattery = 0;
         DBattery = 1;
         MainsReq = 5 * (PowerDeficit - DBattery - 2);
-        a.HousesSaved -= 3;
+        housesLost = 3;
     }
     else
     {
@@ -92,7 +105,8 @@ void algorithm(struct test a, int i)
         MainsReq = 10;
         if (PowerDeficit > 2)
         {
-            a.HousesSaved -= 4;
+            housesLost = 4;
         }
     }
+    return housesLost;
 }
