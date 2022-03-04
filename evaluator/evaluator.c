@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include "testprofiles.h"
 
-float score[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+float score[10];
 float scoreTotal = 0;
+int hour;
 
 short int CBattery = 0;
 short int DBattery = 0;
@@ -27,6 +28,7 @@ int main()
 
 float evaluate(struct test a)
 {
+    hour = 0;
     for (int i = 0; i < 24; i++)
     {
         a.HousesSaved -= algorithm(a, i);
@@ -52,7 +54,7 @@ float evaluate(struct test a)
 
     printf("Battery Integral: %d, Battery Score: %2.2f%%\n", a.BatteryIntegral, batteryScore);
 
-    return (batteryScore / 100 * (35 / 65 * houseScore + 30 / 65 * mainsScore));
+    return (batteryScore / (float)100) * ((float)35 / (float)65 * houseScore + (float)30 / (float)65 * mainsScore);
 }
 
 int algorithm(struct test a, int i)
@@ -66,36 +68,76 @@ int algorithm(struct test a, int i)
     float PowerRequired = a.Load1[i] + a.Load2[i] + a.Load3[i];
     float PowerDeficit = PowerRequired - a.Wind[i] - a.PV[i];
 
-    if (PowerDeficit < 0)
+    if (PowerDeficit < -1)
     {
         CBattery = 1;
         DBattery = 0;
         MainsReq = 0;
     }
-    else if (PowerDeficit <= 1)
+    else if (PowerDeficit < 0)
+    {
+        CBattery = 1;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit + CBattery);
+    }
+        else if (PowerDeficit <=1 && ((hour >= 22 && a.BatteryIntegral < 0) || (hour <=7 && a.BatteryIntegral < 3)))
+    {
+        CBattery = 1;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit + CBattery);
+    }
+        else if (PowerDeficit <= 1.8 && ((hour >= 22 && a.BatteryIntegral < 0) || (hour <=7 && a.BatteryIntegral < 3)))
+    {
+        CBattery = 1;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit + CBattery -0.8);
+        housesLost = 1;
+    }
+    else if (PowerDeficit <= 3 && ((hour >= 22 && a.BatteryIntegral < 0) || (hour <=7 && a.BatteryIntegral < 3)))
+    {
+        CBattery = 1;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit + CBattery -2);
+        housesLost = 3;
+    }
+    else if (PowerDeficit <= 2 && a.BatteryIntegral <= -2)
     {
         CBattery = 0;
-        DBattery = 1;
-        MainsReq = 0;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit);
     }
-    else if (PowerDeficit <= 3)
+    else if (PowerDeficit <= 3 && a.BatteryIntegral > -2)
     {
         CBattery = 0;
         DBattery = 1;
         MainsReq = 5 * (PowerDeficit - DBattery);
     }
-    else if (PowerDeficit <= 3.8)
+    else if (PowerDeficit <= 2.8 && a.BatteryIntegral <= -2)
+    {
+        CBattery = 0;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit - 0.8);
+        housesLost = 1;
+    }
+    else if (PowerDeficit <= 3.8 && a.BatteryIntegral > -2)
     {
         CBattery = 0;
         DBattery = 1;
         MainsReq = 5 * (PowerDeficit - DBattery - 0.8);
         housesLost = 1;
     }
-    else if (PowerDeficit <= 4)
+    else if (PowerDeficit <= 4 && a.BatteryIntegral > -2)
     {
         CBattery = 0;
         DBattery = 1;
         MainsReq = 5 * (PowerDeficit - DBattery - 2);
+        housesLost = 3;
+    }
+    else if (PowerDeficit <= 4 && a.BatteryIntegral <= -2)
+    {
+        CBattery = 0;
+        DBattery = 0;
+        MainsReq = 5 * (PowerDeficit - 2);
         housesLost = 3;
     }
     else
@@ -108,5 +150,6 @@ int algorithm(struct test a, int i)
             housesLost = 4;
         }
     }
+    hour++;
     return housesLost;
 }
