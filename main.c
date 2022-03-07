@@ -103,21 +103,21 @@ int main() {
 
         if((millis_timer % 1000) == 0) {
 
-            state = !state;
-            set_load1(state);
+            //state = !state;
+            //set_load1(state);
 
-            switch(bat_state) {
+            switch(battery_state) {
 
                 case CHARGING:
-                    bat_state = DISCHARGING;
+                    battery_state = DISCHARGING;
                     break;
 
                 case DISCHARGING:
-                    bat_state = DISCONNECTED;
+                    battery_state = DISCONNECTED;
                     break;
 
                 default:
-                    bat_state = CHARGING;
+                    battery_state = CHARGING;
                     break;
             }
         }
@@ -313,7 +313,7 @@ void draw_screen() {
         display_string(": ");
 
         display.x = HALF_WIDTH;
-        draw_indicator(state);
+        //draw_indicator(state);
 
         display.y += 10;
         display.x = 0;
@@ -322,7 +322,7 @@ void draw_screen() {
     display_string("Battery State:");
     display.x = HALF_WIDTH;
 
-    draw_battery_state(bat_state);
+    draw_battery_state(battery_state);
 
 
 

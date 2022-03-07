@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "testprofiles.h"
+#include "test.h"
 
 float score[10];
 float scoreTotal = 0;
@@ -189,8 +190,8 @@ int algorithm(struct test a, int i)
         CBattery = 0;
         DBattery = 0;
         MainsReq = 10;
-        if (PowerDeficit > 2)
-        {
+        
+        if (PowerDeficit > 2) {
             housesLost = 4;
         }
     }
