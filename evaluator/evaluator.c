@@ -6,6 +6,9 @@ float score[10];
 float scoreTotal = 0;
 int hour;
 
+float V2_2 = 0;
+float V2_5 = 0;
+
 short int CBattery = 0;
 short int DBattery = 0;
 float MainsReq = 0;
@@ -81,6 +84,8 @@ int algorithm(struct test a, int i)
     float PowerRequired = a.Load1[i] + a.Load2[i] + a.Load3[i];
     float PowerDeficit = PowerRequired - a.Wind[i] - a.PV[i];
 
+    float mainsSupply = (V2_2 - V2_5) - a.Wind[i] - a.PV[i];
+
     // Charge battery if excess renewable
     if (PowerDeficit < -1)
     {
@@ -91,7 +96,7 @@ int algorithm(struct test a, int i)
 
     // Charge battery if some spare renewable and make up the difference with mains
     // Change to -0.1 increases score but is probably specific to these tests
-    else if (PowerDeficit < 0)
+    else if (-1 <= PowerDeficit && PowerDeficit < 0)
     {
         CBattery = 1;
         DBattery = 0;
@@ -103,7 +108,7 @@ int algorithm(struct test a, int i)
     // Charge battery if small load and offpeak
     // Charge to +2 before peak
     // Charge to 0 after peak
-    else if (PowerDeficit < 1 && ((hour <= 7 && a.BatteryIntegral <= 2) || (hour >= 22 && a.BatteryIntegral < 0)))
+    else if ((0 <= PowerDeficit && PowerDeficit < 1) && ((hour <= 7 && a.BatteryIntegral <= 2) || (hour >= 22 && a.BatteryIntegral < 0)))
     {
         CBattery = 1;
         DBattery = 0;
@@ -111,7 +116,7 @@ int algorithm(struct test a, int i)
     }
 
     // Charge battery, switch off lights if medium load and offpeak
-    else if (PowerDeficit < 1.8 && ((hour <= 7 && a.BatteryIntegral <= 2) || (hour >= 22 && a.BatteryIntegral < 0)))
+    else if ((1 <= PowerDeficit && PowerDeficit < 1.8) && ((hour <= 7 && a.BatteryIntegral <= 2) || (hour >= 22 && a.BatteryIntegral < 0)))
     {
         CBattery = 1;
         DBattery = 0;
@@ -120,7 +125,7 @@ int algorithm(struct test a, int i)
     }
 
     // Charge battery, switch off lifters if high load and offpeak
-    else if (PowerDeficit < 3 && ((hour <= 7 && a.BatteryIntegral <= 2) || (hour >= 22 && a.BatteryIntegral < 0)))
+    else if ((1.8 <= PowerDeficit && PowerDeficit < 3) && ((hour <= 7 && a.BatteryIntegral <= 2) || (hour >= 22 && a.BatteryIntegral < 0)))
     {
         CBattery = 1;
         DBattery = 0;
@@ -131,7 +136,7 @@ int algorithm(struct test a, int i)
     // Battery at -2
 
     // Small load, supply with mains
-    else if (PowerDeficit < 2 && a.BatteryIntegral <= -2)
+    else if ((0 <= PowerDeficit && PowerDeficit < 2) && a.BatteryIntegral <= -2)
     {
         CBattery = 0;
         DBattery = 0;
@@ -139,7 +144,7 @@ int algorithm(struct test a, int i)
     }
 
     // Medium load, switch off lights supply with mains
-    else if (PowerDeficit < 2.8 && a.BatteryIntegral <= -2)
+    else if ((2 <= PowerDeficit && PowerDeficit < 2.8) && a.BatteryIntegral <= -2)
     {
         CBattery = 0;
         DBattery = 0;
@@ -148,7 +153,7 @@ int algorithm(struct test a, int i)
     }
 
     // High load, switch off lifters supply with mains
-    else if (PowerDeficit <= 4 && a.BatteryIntegral <= -2)
+    else if ((2.8 <= PowerDeficit && PowerDeficit <= 4) && a.BatteryIntegral <= -2)
     {
         CBattery = 0;
         DBattery = 0;
@@ -159,7 +164,7 @@ int algorithm(struct test a, int i)
     // Battery above -2
 
     // Small load, discharge battery and supply with mains
-    else if (PowerDeficit < 3 && a.BatteryIntegral > -2)
+    else if ((0 <= PowerDeficit && PowerDeficit < 3) && a.BatteryIntegral > -2)
     {
         CBattery = 0;
         DBattery = 1;
@@ -167,7 +172,7 @@ int algorithm(struct test a, int i)
     }
 
     // Medium load, switch off lights discharge battery and supply with mains
-    else if (PowerDeficit < 3.8 && a.BatteryIntegral > -2)
+    else if ((3 <= PowerDeficit && PowerDeficit < 3.8) && a.BatteryIntegral > -2)
     {
         CBattery = 0;
         DBattery = 1;
@@ -176,7 +181,7 @@ int algorithm(struct test a, int i)
     }
 
     // High load, switch off lifters dischage battery and supply with mains
-    else if (PowerDeficit <= 4 && a.BatteryIntegral > -2)
+    else if ((3.8 <= PowerDeficit && PowerDeficit <= 4) && a.BatteryIntegral > -2)
     {
         CBattery = 0;
         DBattery = 1;
