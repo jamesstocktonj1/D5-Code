@@ -36,6 +36,7 @@
 
 // TODO
 // implement graphics for power
+// implement load names
 
 
 //graphics functions
