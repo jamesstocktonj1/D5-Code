@@ -21,6 +21,8 @@
 #define HALF_HEIGHT LCDHEIGHT / 2
 #define QUARTER_HEIGHT LCDHEIGHT / 4
 
+#define LINDENT 10
+
 #define COLUMN 100
 
 //define colours
@@ -32,13 +34,19 @@
 
 
 
+// TODO
+// implement graphics for power
+
+
 //graphics functions
 void draw_bar(uint16_t value, uint16_t colour);
 void draw_tricolour_bar(uint16_t value);
 void draw_signed_bar(int16_t value, uint16_t colour);
 void draw_battery_state(battery state);
 void draw_indicator(uint8_t state);
+void draw_status(char *status, uint16_t colour);
 
+void splash_screen(void);
 void draw_screen(void);
 
 //initialise millisecond timer
@@ -49,6 +57,10 @@ volatile uint32_t millis_timer;
 //runs io functions
 void read_inputs(void);
 void write_outputs(void);
+
+
+//main algorithm
+void algorithm(void);
 
 
 //main global values
@@ -63,6 +75,7 @@ uint8_t load1_call, load2_call, load3_call;
 //digital output values
 uint8_t load1, load2, load3;
 battery battery_state = DISCONNECTED;
+uint8_t battery_charge;
 
 
 
@@ -101,6 +114,7 @@ int main() {
 
     while(1) {
 
+        /*
         if((millis_timer % 1000) == 0) {
 
             //state = !state;
@@ -121,9 +135,12 @@ int main() {
                     break;
             }
         }
+        */
         
 
         if((millis_timer % SCREEN_REFRESH) == 0) {
+
+            read_inputs();
             
             draw_screen();
         }
@@ -164,7 +181,7 @@ void init_timer() {
 void draw_bar(uint16_t value, uint16_t colour) {
 
     //convert 0-1024 to 0-128
-    value = value / 4;
+    value = value / 8;
 
     //setup rectangle
     rectangle bar;
@@ -255,7 +272,150 @@ void draw_indicator(uint8_t state) {
     fill_rectangle(ind, col);
 }
 
+void draw_status(char *status, uint16_t colour) {
 
+    rectangle stat;
+    stat.top = 270;
+    stat.bottom = 310;
+    stat.left = 60;
+    stat.right = 180;
+
+    fill_rectangle(stat, colour);
+
+    display.x = 80;
+    display.y = 286;
+    display_string(status);
+}
+
+
+
+
+
+void draw_screen() {
+
+    //clear changing area of the screen
+    clear_screen();
+
+
+    //display wind capacity
+    display.y = 20;
+
+    display.x = LINDENT;
+    display_string("Wind:");
+
+    display.x = COLUMN;
+    draw_bar(wind_capacity, GREEN);
+
+
+    //display solar capacity
+    display.y = 40;
+
+    display.x = LINDENT;
+    display_string("Solar:");
+
+    display.x = COLUMN;
+    draw_bar(solar_capacity, GREEN);
+
+
+    //display mains capacity
+    display.y = 60;
+
+    display.x = LINDENT;
+    display_string("Mains:");
+
+    display.x = COLUMN;
+    draw_bar(mains_capacity, GREEN);
+
+
+    //display battery status
+    display.y = 80;
+
+    display.x = LINDENT;
+    display_string("Battery:");
+
+    display.x = COLUMN;
+    draw_battery_state(battery_state);
+
+    display.x = COLUMN + 15;
+    draw_bar(battery_charge, GREEN);
+
+
+    //display call 1
+    display.y = 120;
+
+    display.x = LINDENT;
+    display_string("Call 1:");
+
+    display.x = COLUMN;
+    draw_indicator(load1_call);
+
+    display.x = COLUMN * 1.5;
+    draw_indicator(load1);
+
+    //display call 2
+    display.y = 140;
+
+    display.x = LINDENT;
+    display_string("Call 2:");
+
+    display.x = COLUMN;
+    draw_indicator(load2_call);
+
+    display.x = COLUMN * 1.5;
+    draw_indicator(load2);
+
+    //display call 3
+    display.y = 160;
+
+    display.x = LINDENT;
+    display_string("Call 3:");
+
+    display.x = COLUMN;
+    draw_indicator(load3_call);
+
+    display.x = COLUMN * 1.5;
+    draw_indicator(load3);
+
+
+
+    //display busbar voltage
+    display.y = 200;
+
+    display.x = LINDENT;
+    display_string("Busbar Voltage:");
+
+    display.x = COLUMN;
+    draw_bar(busbar_voltage, GREEN);
+
+
+    //display busbar current
+    display.y = 220;
+
+    display.x = LINDENT;
+    display_string("Busbar Current:");
+
+    display.x = COLUMN;
+    draw_bar(busbar_current, GREEN);
+
+    
+    //display busbar power
+    display.y = 240;
+
+    display.x = LINDENT;
+    display_string("Busbar Power:");
+    
+    uint16_t busbar_power = 0;
+    busbar_power = (busbar_current * busbar_power) / 1024;
+
+    display.x = COLUMN;
+    draw_bar(busbar_power, GREEN);
+
+
+    //draw status box
+    draw_status("Good", GREEN);
+}
+
+/*
 void draw_screen() {
 
     //setup refresh area rectangle
@@ -269,7 +429,7 @@ void draw_screen() {
     //clear_screen();
 
     //only refresh changed area
-    fill_rectangle(refreshArea, display.background);
+    //fill_rectangle(refreshArea, display.background);
 
     //set display cursor to top left
     display.x = 0;
@@ -334,7 +494,7 @@ void draw_screen() {
 
     display_string("Timer Value: ");
     display_string(num);
-}
+}*/
 
 
 
@@ -358,7 +518,7 @@ void read_inputs(void) {
 
 
 
-void write_outputs(void) {
+void write_outputs() {
 
     //set output values
     set_load1(load1);
@@ -366,4 +526,9 @@ void write_outputs(void) {
     set_load3(load3);
 
     set_battery_state(battery_state);
+}
+
+
+void splash_screen() {
+
 }
