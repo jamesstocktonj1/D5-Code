@@ -99,7 +99,7 @@ int main()
     sei();
 
     // splash screen
-    display_string("Hello World!");
+    splash_screen();
 
     _delay_ms(2000);
 
@@ -627,4 +627,35 @@ void write_outputs()
 
 void splash_screen()
 {
+    rectangle a;
+	a.left = 45;
+	a.right = 150;
+	a.top  = 270;
+	a.bottom = 290;
+	fill_rectangle(a, WHITE);
+	a.left = 45;
+	a.right = 65;
+	a.top = 110;
+	a.bottom = 270;
+	fill_rectangle(a, WHITE);
+	a.left = 45;
+	a.right = 150;
+	a.top = 90;
+	a.bottom = 110;
+	fill_rectangle(a, WHITE);
+	a.left = 170;
+	a.right = 190;
+	a.top = 130;
+	a.bottom = 250;
+	fill_rectangle(a, WHITE);
+	a.left = 150;
+	a.right = 170;
+	a.top = 110;
+	a.bottom = 130;
+	fill_rectangle(a, WHITE);
+	a.left = 150;
+	a.right = 170;
+	a.top = 250;
+	a.bottom = 270;
+	fill_rectangle(a, WHITE);
 }
