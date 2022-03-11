@@ -42,7 +42,7 @@ void draw_tricolour_bar(uint16_t value);
 void draw_signed_bar(int16_t value, uint16_t colour);
 void draw_battery_state(battery state);
 void draw_indicator(uint8_t state);
-void draw_status(char *status, uint16_t colour);
+void draw_status(char* status, uint16_t colour);
 
 void splash_screen(void);
 void draw_screen(void);
@@ -75,15 +75,13 @@ uint8_t load1, load2, load3;
 battery battery_state = DISCONNECTED;
 int8_t battery_charge;
 
-ISR(TIMER0_OVF_vect)
-{
+ISR(TIMER0_OVF_vect) {
     millis_timer++;
 
     TCNT0 = MILLIS_VALUE; // set count register value
 }
 
-int main()
-{
+int main() {
 
     // initialise screen (and set orientation)
     init_lcd();
@@ -103,8 +101,7 @@ int main()
 
     _delay_ms(2000);
 
-    while (1)
-    {
+    while (1) {
 
         /*
         if((millis_timer % 1000) == 0) {
@@ -129,13 +126,12 @@ int main()
         }
         */
 
-        if ((millis_timer % SCREEN_REFRESH) == 0)
-        {
+        if ((millis_timer % SCREEN_REFRESH) == 0) {
 
             read_inputs();
 
             draw_screen();
-            //write algorithm results
+            // write algorithm results
         }
 
         // state = !state;
@@ -148,32 +144,29 @@ int main()
 
 // Main algorithm to be implemented in project
 // Average score of 79.16%
-void algorithm(void)
-{
+void algorithm(void) {
     uint32_t current_time = millis_timer;
     uint8_t offpeak = ((current_time <= (7 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
 
     // Set constants to zero
-    //int housesLost = 0;
+    // int housesLost = 0;
     float MainsReq = 0;
 
     // Calculate power necessary
     float PowerRequired = 1.2 * load1_call + 2 * load2_call + 0.8 * load3_call;
     float PowerDeficit = PowerRequired - wind_capacity - solar_capacity;
 
-    //float mainsSupply = (V2_2 - V2_5) - a.Wind[i] - a.PV[i];
+    // float mainsSupply = (V2_2 - V2_5) - a.Wind[i] - a.PV[i];
 
     // Charge battery if excess renewable
-    if (PowerDeficit < -1)
-    {
+    if (PowerDeficit < -1) {
         battery_state = CHARGING;
         MainsReq = 0;
     }
 
     // Charge battery if some spare renewable and make up the difference with mains
     // Change to -0.1 increases score but is probably specific to these tests
-    else if (-1 <= PowerDeficit && PowerDeficit < 0)
-    {
+    else if (-1 <= PowerDeficit && PowerDeficit < 0) {
         battery_state = CHARGING;
         MainsReq = 5 * (PowerDeficit + 1);
     }
@@ -183,22 +176,19 @@ void algorithm(void)
     // Charge battery if small load and offpeak
     // Charge to +2 before peak
     // Charge to 0 after peak
-    else if ((0 <= PowerDeficit && PowerDeficit < 1) && offpeak)
-    {
+    else if ((0 <= PowerDeficit && PowerDeficit < 1) && offpeak) {
         load_switch(CHARGING, load1_call, load2_call, load3_call);
         MainsReq = 5 * (PowerDeficit + 1);
     }
 
     // Charge battery, switch off lights if medium load and offpeak
-    else if ((1 <= PowerDeficit && PowerDeficit < 1.8) && offpeak)
-    {
+    else if ((1 <= PowerDeficit && PowerDeficit < 1.8) && offpeak) {
         load_switch(CHARGING, load1_call, load2_call, 0);
         MainsReq = 5 * (PowerDeficit + 0.2);
     }
 
     // Charge battery, switch off lifters if high load and offpeak
-    else if ((1.8 <= PowerDeficit && PowerDeficit < 3) && offpeak)
-    {
+    else if ((1.8 <= PowerDeficit && PowerDeficit < 3) && offpeak) {
         load_switch(CHARGING, load1_call, 0, load3_call);
         MainsReq = 5 * (PowerDeficit - 1);
     }
@@ -206,22 +196,19 @@ void algorithm(void)
     // Battery at -2
 
     // Small load, supply with mains
-    else if ((0 <= PowerDeficit && PowerDeficit < 2) && battery_charge <= -2)
-    {
+    else if ((0 <= PowerDeficit && PowerDeficit < 2) && battery_charge <= -2) {
         load_switch(DISCONNECTED, load1_call, load2_call, load3_call);
         MainsReq = 5 * (PowerDeficit);
     }
 
     // Medium load, switch off lights supply with mains
-    else if ((2 <= PowerDeficit && PowerDeficit < 2.8) && battery_charge <= -2)
-    {
+    else if ((2 <= PowerDeficit && PowerDeficit < 2.8) && battery_charge <= -2) {
         load_switch(DISCONNECTED, load1_call, load2_call, 0);
         MainsReq = 5 * (PowerDeficit - 0.8);
     }
 
     // High load, switch off lifters supply with mains
-    else if ((2.8 <= PowerDeficit && PowerDeficit <= 4) && battery_charge <= -2)
-    {
+    else if ((2.8 <= PowerDeficit && PowerDeficit <= 4) && battery_charge <= -2) {
         load_switch(DISCONNECTED, load1_call, 0, load3_call);
         MainsReq = 5 * (PowerDeficit - 2);
     }
@@ -229,45 +216,39 @@ void algorithm(void)
     // Battery above -2
 
     // Small load, discharge battery and supply with mains
-    else if ((0 <= PowerDeficit && PowerDeficit < 3) && battery_charge > -2)
-    {
+    else if ((0 <= PowerDeficit && PowerDeficit < 3) && battery_charge > -2) {
         load_switch(DISCHARGING, load1_call, load2_call, load3_call);
         MainsReq = 5 * (PowerDeficit - 1);
     }
 
     // Medium load, switch off lights discharge battery and supply with mains
-    else if ((3 <= PowerDeficit && PowerDeficit < 3.8) && battery_charge > -2)
-    {
+    else if ((3 <= PowerDeficit && PowerDeficit < 3.8) && battery_charge > -2) {
         load_switch(DISCHARGING, load1_call, load2_call, 0);
         MainsReq = 5 * (PowerDeficit - 1.8);
     }
 
     // High load, switch off lifters dischage battery and supply with mains
-    else if ((3.8 <= PowerDeficit && PowerDeficit <= 4) && battery_charge > -2)
-    {
+    else if ((3.8 <= PowerDeficit && PowerDeficit <= 4) && battery_charge > -2) {
         load_switch(DISCHARGING, load1_call, 0, load3_call);
         MainsReq = 5 * (PowerDeficit - 3);
     }
 
     // If unsure, switch off lifters dont make battery better or worse, supply with mains
-    else
-    {
+    else {
         load_switch(DISCONNECTED, load1_call, 0, load3_call);
         MainsReq = 10;
     }
 }
 
 // Set loads to appropriate values
-void load_switch(battery bat, uint8_t l1, uint8_t l2, uint8_t l3)
-{
+void load_switch(battery bat, uint8_t l1, uint8_t l2, uint8_t l3) {
     battery_state = bat;
     load1 = l1;
     load2 = l2;
     load3 = l3;
 }
 
-void init_timer()
-{
+void init_timer() {
     // set to normal mode, no output
     TCCR0A = 0x00;
 
@@ -284,8 +265,7 @@ void init_timer()
     millis_timer = 0;
 }
 
-void draw_bar(uint16_t value, uint16_t colour)
-{
+void draw_bar(uint16_t value, uint16_t colour) {
 
     // convert 0-1024 to 0-128
     value = value / 8;
@@ -300,25 +280,21 @@ void draw_bar(uint16_t value, uint16_t colour)
     fill_rectangle(bar, colour);
 }
 
-void draw_tricolour_bar(uint16_t value)
-{
+void draw_tricolour_bar(uint16_t value) {
 
     uint16_t colour = GREEN;
 
-    if (value > RED_THRESHOLD)
-    {
+    if (value > RED_THRESHOLD) {
         colour = RED;
     }
-    else if (value > ORANGE_THRESHOLD)
-    {
+    else if (value > ORANGE_THRESHOLD) {
         colour = ORANGE;
     }
 
     draw_bar(value, colour);
 }
 
-void draw_signed_bar(int16_t value, uint16_t colour)
-{
+void draw_signed_bar(int16_t value, uint16_t colour) {
 
     // converty +-512 to +-64
     value = value / 4;
@@ -335,8 +311,7 @@ void draw_signed_bar(int16_t value, uint16_t colour)
     fill_rectangle(bar, colour);
 }
 
-void draw_battery_state(battery state)
-{
+void draw_battery_state(battery state) {
 
     // create indicator square of size 7x7 (pixel height square)
     rectangle ind;
@@ -348,8 +323,7 @@ void draw_battery_state(battery state)
     // color variable
     uint16_t col;
 
-    switch (state)
-    {
+    switch (state) {
 
     case CHARGING:
         col = GREEN;
@@ -368,8 +342,7 @@ void draw_battery_state(battery state)
     fill_rectangle(ind, col);
 }
 
-void draw_indicator(uint8_t state)
-{
+void draw_indicator(uint8_t state) {
 
     // create indicator square of size 7x7 (pixel height square)
     rectangle ind;
@@ -385,8 +358,7 @@ void draw_indicator(uint8_t state)
     fill_rectangle(ind, col);
 }
 
-void draw_status(char *status, uint16_t colour)
-{
+void draw_status(char* status, uint16_t colour) {
 
     rectangle stat;
     stat.top = 270;
@@ -394,15 +366,14 @@ void draw_status(char *status, uint16_t colour)
     stat.left = 60;
     stat.right = 180;
 
-    //fill_rectangle(stat, colour);
+    // fill_rectangle(stat, colour);
 
     display.x = 80;
     display.y = 286;
     display_string(status);
 }
 
-void draw_screen()
-{
+void draw_screen() {
 
     // clear changing area of the screen
     clear_screen();
@@ -514,7 +485,6 @@ void draw_screen()
 
     // draw status box
     draw_status("Good", GREEN);
-    
 }
 
 /*
@@ -598,8 +568,7 @@ void draw_screen() {
     display_string(num);
 }*/
 
-void read_inputs(void)
-{
+void read_inputs(void) {
 
     // read analog values
     mains_capacity = get_mains_capacity();
@@ -616,8 +585,7 @@ void read_inputs(void)
     load3_call = get_load3();
 }
 
-void write_outputs()
-{
+void write_outputs() {
 
     // set output values
     set_load1(load1);
@@ -631,39 +599,39 @@ void splash_screen() {
 
     rectangle a;
 
-	a.left = 45;
-	a.right = 150;
-	a.top  = 270;
-	a.bottom = 290;
-	fill_rectangle(a, WHITE);
+    a.left = 45;
+    a.right = 150;
+    a.top = 270;
+    a.bottom = 290;
+    fill_rectangle(a, WHITE);
 
-	a.left = 45;
-	a.right = 65;
-	a.top = 110;
-	a.bottom = 270;
-	fill_rectangle(a, WHITE);
+    a.left = 45;
+    a.right = 65;
+    a.top = 110;
+    a.bottom = 270;
+    fill_rectangle(a, WHITE);
 
-	a.left = 45;
-	a.right = 150;
-	a.top = 90;
-	a.bottom = 110;
-	fill_rectangle(a, WHITE);
+    a.left = 45;
+    a.right = 150;
+    a.top = 90;
+    a.bottom = 110;
+    fill_rectangle(a, WHITE);
 
-	a.left = 170;
-	a.right = 190;
-	a.top = 130;
-	a.bottom = 250;
-	fill_rectangle(a, WHITE);
+    a.left = 170;
+    a.right = 190;
+    a.top = 130;
+    a.bottom = 250;
+    fill_rectangle(a, WHITE);
 
-	a.left = 150;
-	a.right = 170;
-	a.top = 110;
-	a.bottom = 130;
-	fill_rectangle(a, WHITE);
+    a.left = 150;
+    a.right = 170;
+    a.top = 110;
+    a.bottom = 130;
+    fill_rectangle(a, WHITE);
 
-	a.left = 150;
-	a.right = 170;
-	a.top = 250;
-	a.bottom = 270;
-	fill_rectangle(a, WHITE);
+    a.left = 150;
+    a.right = 170;
+    a.top = 250;
+    a.bottom = 270;
+    fill_rectangle(a, WHITE);
 }

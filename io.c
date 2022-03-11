@@ -9,7 +9,7 @@ void init_pins() {
     int i;
 
     //set pins 0-7 on port C to outputs
-    for(i=0; i<8; i++) {
+    for (i = 0; i < 8; i++) {
         DDRC |= _BV(i);
     }
 }
@@ -20,7 +20,7 @@ void init_adc() {
     int i;
 
     //initialise pins A0-A8 as inputs
-    for(i=0; i<8; i++) {
+    for (i = 0; i < 8; i++) {
         DDRA &= ~_BV(i);
     }
 
@@ -32,23 +32,23 @@ void init_adc() {
     //setup control register A
     ADCSRA |= _BV(ADPS2);       //set prescaler to 16
     //ADCSRA |= _BV(ADATE);       //auto trigger
-	ADCSRA |= _BV(ADEN);		//enable adcs
+    ADCSRA |= _BV(ADEN);		//enable adcs
     //ADCSRA |= _BV(ADIF);        //interrupt flag
-	ADCSRA |= _BV(ADSC);	      //start conversion
+    ADCSRA |= _BV(ADSC);	      //start conversion
 
     //setup control register B
-	ADCSRB = 0;
+    ADCSRB = 0;
 }
 
 uint16_t read_adc(uint8_t channel) {
-    
+
     ADMUX = channel;            //set mux to channel number
     ADMUX |= _BV(REFS0);        //AVCC reference
     ADMUX |= _BV(ADLAR);        //left to right data
 
     ADCSRA |= _BV(ADSC);        //start conversion
 
-    while(ADCSRA & _BV(ADSC));  //wait for end of conversion
+    while (ADCSRA & _BV(ADSC));  //wait for end of conversion
 
     uint8_t lowerRegister = ADCL;       //read lower register
     uint8_t upperRegister = ADCH;       //read upper register
@@ -86,29 +86,29 @@ uint16_t get_solar_capacity() {
 void set_battery_state(battery state) {
 
     //set charge and discharge lines depending on battery state
-    switch(state) {
+    switch (state) {
 
-        case CHARGING:
-            set_battery_charge(1);
-            set_battery_discharge(0);
-            break;
+    case CHARGING:
+        set_battery_charge(1);
+        set_battery_discharge(0);
+        break;
 
-        case DISCHARGING:
-            set_battery_charge(0);
-            set_battery_discharge(1);
-            break;
+    case DISCHARGING:
+        set_battery_charge(0);
+        set_battery_discharge(1);
+        break;
 
-        default:
-            set_battery_charge(0);
-            set_battery_discharge(0);
-            break;
+    default:
+        set_battery_charge(0);
+        set_battery_discharge(0);
+        break;
     }
 }
 
 
 void set_battery_charge(uint8_t state) {
 
-    if(state) {
+    if (state) {
         PORTC |= _BV(CHARGE_BATTERY);
     }
     else {
@@ -118,7 +118,7 @@ void set_battery_charge(uint8_t state) {
 
 void set_battery_discharge(uint8_t state) {
 
-    if(state) {
+    if (state) {
         PORTC |= _BV(DISCHARGE_BATTERY);
     }
     else {
@@ -128,7 +128,7 @@ void set_battery_discharge(uint8_t state) {
 
 void set_load1(uint8_t state) {
 
-    if(state) {
+    if (state) {
         PORTC |= _BV(SWITCH_LOAD1);
     }
     else {
@@ -138,7 +138,7 @@ void set_load1(uint8_t state) {
 
 void set_load2(uint8_t state) {
 
-    if(state) {
+    if (state) {
         PORTC |= _BV(SWITCH_LOAD2);
     }
     else {
@@ -148,7 +148,7 @@ void set_load2(uint8_t state) {
 
 void set_load3(uint8_t state) {
 
-    if(state) {
+    if (state) {
         PORTC |= _BV(SWITCH_LOAD3);
     }
     else {
