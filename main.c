@@ -135,6 +135,7 @@ int main()
             read_inputs();
 
             draw_screen();
+            //write algorithm results
         }
 
         // state = !state;
