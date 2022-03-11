@@ -150,7 +150,8 @@ int main()
 // Average score of 79.16%
 void algorithm(void)
 {
-    double hour = (double)millis_timer / (60.0 * 1000.0);
+    uint32_t current_time = millis_timer;
+    uint8_t offpeak = ((current_timer <= (7 * 60 * 1000) && battery_charge <= 2) || (current_timer >= (22 * 60 * 1000) && battery_charge < 0));
 
     // Set constants to zero
     //int housesLost = 0;
@@ -182,21 +183,21 @@ void algorithm(void)
     // Charge battery if small load and offpeak
     // Charge to +2 before peak
     // Charge to 0 after peak
-    else if ((0 <= PowerDeficit && PowerDeficit < 1) && ((hour <= 7 && battery_charge <= 2) || (hour >= 22 && battery_charge < 0)))
+    else if ((0 <= PowerDeficit && PowerDeficit < 1) && offpeak)
     {
         load_switch(CHARGING, load1_call, load2_call, load3_call);
         MainsReq = 5 * (PowerDeficit + 1);
     }
 
     // Charge battery, switch off lights if medium load and offpeak
-    else if ((1 <= PowerDeficit && PowerDeficit < 1.8) && ((hour <= 7 && battery_charge <= 2) || (hour >= 22 && battery_charge < 0)))
+    else if ((1 <= PowerDeficit && PowerDeficit < 1.8) && offpeak)
     {
         load_switch(CHARGING, load1_call, load2_call, 0);
         MainsReq = 5 * (PowerDeficit + 0.2);
     }
 
     // Charge battery, switch off lifters if high load and offpeak
-    else if ((1.8 <= PowerDeficit && PowerDeficit < 3) && ((hour <= 7 && battery_charge <= 2) || (hour >= 22 && battery_charge < 0)))
+    else if ((1.8 <= PowerDeficit && PowerDeficit < 3) && offpeak)
     {
         load_switch(CHARGING, load1_call, 0, load3_call);
         MainsReq = 5 * (PowerDeficit - 1);
