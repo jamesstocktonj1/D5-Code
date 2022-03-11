@@ -151,7 +151,7 @@ int main()
 void algorithm(void)
 {
     uint32_t current_time = millis_timer;
-    uint8_t offpeak = ((current_timer <= (7 * 60 * 1000) && battery_charge <= 2) || (current_timer >= (22 * 60 * 1000) && battery_charge < 0));
+    uint8_t offpeak = ((current_time <= (7 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
 
     // Set constants to zero
     //int housesLost = 0;
@@ -394,7 +394,7 @@ void draw_status(char *status, uint16_t colour)
     stat.left = 60;
     stat.right = 180;
 
-    fill_rectangle(stat, colour);
+    //fill_rectangle(stat, colour);
 
     display.x = 80;
     display.y = 286;
@@ -514,6 +514,7 @@ void draw_screen()
 
     // draw status box
     draw_status("Good", GREEN);
+    
 }
 
 /*
@@ -626,34 +627,40 @@ void write_outputs()
     set_battery_state(battery_state);
 }
 
-void splash_screen()
-{
+void splash_screen() {
+
     rectangle a;
+
 	a.left = 45;
 	a.right = 150;
 	a.top  = 270;
 	a.bottom = 290;
 	fill_rectangle(a, WHITE);
+
 	a.left = 45;
 	a.right = 65;
 	a.top = 110;
 	a.bottom = 270;
 	fill_rectangle(a, WHITE);
+
 	a.left = 45;
 	a.right = 150;
 	a.top = 90;
 	a.bottom = 110;
 	fill_rectangle(a, WHITE);
+
 	a.left = 170;
 	a.right = 190;
 	a.top = 130;
 	a.bottom = 250;
 	fill_rectangle(a, WHITE);
+
 	a.left = 150;
 	a.right = 170;
 	a.top = 110;
 	a.bottom = 130;
 	fill_rectangle(a, WHITE);
+
 	a.left = 150;
 	a.right = 170;
 	a.top = 250;
