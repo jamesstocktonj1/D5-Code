@@ -32,6 +32,28 @@
 #define RED_THRESHOLD 870    // aprox 85%
 #define ORANGE_THRESHOLD 717 // aprox 70%
 
+
+//algorithm constants
+#define AMP 256
+#define HALF_AMP 128
+
+//scaled ranges to amps(256)
+#define BAT_CHARGE 256
+#define BAT_DISCHARGE 256
+
+#define LOAD1_MAX 307
+#define LOAD2_MAX 512
+#define LOAD3_MAX 205
+
+#define WIND_MAX 768
+#define SOLAR_MAX 256
+#define MAINS_MAX 512
+
+#define CHARGE_TO 120000
+#define DISCHARGE_TO -1200000
+
+#define LOOP_SPEED 
+
 // TODO
 // implement graphics for power
 // implement load names
@@ -62,18 +84,25 @@ void load_switch(battery bat, uint8_t l1, uint8_t l2, uint8_t l3);
 // main global values
 // analog input values
 uint16_t busbar_voltage, busbar_current;
-float wind_capacity, solar_capacity;
+uint16_t wind_capacity, solar_capacity;
 
 // digital input values
 uint8_t load1_call, load2_call, load3_call;
 
 // Analogue output values
-uint16_t mains_capacity;
+uint16_t mains_request;
+uint16_t total_load;
 
 // digital output values
 uint8_t load1, load2, load3;
 battery battery_state = DISCONNECTED;
-int8_t battery_charge;
+int32_t battery_charge;
+
+uint32_t prev_time;
+
+
+char *statusMessage[20];
+uint16_t statusColour;
 
 ISR(TIMER0_OVF_vect) {
     millis_timer++;
@@ -128,125 +157,165 @@ int main() {
 
         if ((millis_timer % SCREEN_REFRESH) == 0) {
 
-            read_inputs();
-
-            draw_screen();
+            //read_inputs();
+            //draw_screen();
             // write algorithm results
         }
 
-        // state = !state;
-
-        _delay_ms(1);
+        // state = !
+        //state;
+        draw_screen();
+        algorithm();
+        _delay_ms(250);
     }
 
     return 1;
 }
 
+
+
 // Main algorithm to be implemented in project
 // Average score of 79.16%
 void algorithm(void) {
+
+    //store current time
     uint32_t current_time = millis_timer;
-    uint8_t offpeak = ((current_time <= (7 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
 
-    // Set constants to zero
-    // int housesLost = 0;
-    float MainsReq = 0;
+    uint32_t delta_time = current_time - prev_time;
 
-    // Calculate power necessary
-    float PowerRequired = 1.2 * load1_call + 2 * load2_call + 0.8 * load3_call;
-    float PowerDeficit = PowerRequired - wind_capacity - solar_capacity;
+    if(battery_state == CHARGING) {
+        battery_charge += delta_time;
+    }
+    if(battery_state == DISCHARGING) {
+        battery_charge -= delta_time;
+    } 
 
-    // float mainsSupply = (V2_2 - V2_5) - a.Wind[i] - a.PV[i];
+    busbar_current = get_busbar_current();
 
-    // Charge battery if excess renewable
-    if (PowerDeficit < -1) {
+    //calculate difference between actual busbar current and what was requested (previous values)
+    uint16_t mainsDeficit = (mains_request == 0) ? 0 : busbar_current - (mains_request + wind_capacity + solar_capacity);
+    uint16_t actualMainsCapacity = mains_request - mainsDeficit;
+
+    //decide if off peak time (batter should charge)
+    //uint8_t offpeak = ((current_time <= (8 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
+
+    //read in new values
+    read_inputs();
+
+    //calculate required load and sum of renewable sources
+    //uint16_t loadSum = load1_call + load2_call + load3_call + mainsDeficit;
+    uint16_t loadSum = 0;
+    loadSum += (load1_call) ? LOAD1_MAX : 0;
+    loadSum += (load2_call) ? LOAD2_MAX : 0;
+    loadSum += (load3_call) ? LOAD3_MAX : 0;
+
+    total_load = loadSum + 0;
+
+    loadSum += mainsDeficit;
+
+    //set default values for loads
+    load1 = load1_call;
+    load2 = load2_call;
+    load3 = load3_call;
+
+    //set default values for mains and battery
+    battery_state = DISCONNECTED;
+    mains_request = 0;
+
+    uint16_t renewableSum = wind_capacity + solar_capacity;
+
+    //calculate power required (excess power if negative)
+    int16_t powerDeficit = loadSum - renewableSum;
+    uint16_t powerExcess = (powerDeficit < 0) ? (powerDeficit * -1) : 0;
+
+
+
+
+    //make decisions on battery status
+
+    //charging if:
+    //time < 7 and charge < 2
+    //time > 22 and charge < 0
+    //spare renewables
+    if((current_time < (7 * 60 * 1000) && battery_charge < CHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge < CHARGE_TO) || (powerExcess > 0)) {
         battery_state = CHARGING;
-        MainsReq = 0;
+        powerDeficit += AMP;
+    }
+    
+    //discharging if:
+    //deficit < 1 and charge > -2
+    //t > 22 and charge > 1
+    else if((powerDeficit > AMP && battery_charge > DISCHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge > 15000)) {
+        battery_state = DISCHARGING;
+        powerDeficit -= AMP;
     }
 
-    // Charge battery if some spare renewable and make up the difference with mains
-    // Change to -0.1 increases score but is probably specific to these tests
-    else if (-1 <= PowerDeficit && PowerDeficit < 0) {
-        battery_state = CHARGING;
-        MainsReq = 5 * (PowerDeficit + 1);
-    }
-
-    // Offpeak
-
-    // Charge battery if small load and offpeak
-    // Charge to +2 before peak
-    // Charge to 0 after peak
-    else if ((0 <= PowerDeficit && PowerDeficit < 1) && offpeak) {
-        load_switch(CHARGING, load1_call, load2_call, load3_call);
-        MainsReq = 5 * (PowerDeficit + 1);
-    }
-
-    // Charge battery, switch off lights if medium load and offpeak
-    else if ((1 <= PowerDeficit && PowerDeficit < 1.8) && offpeak) {
-        load_switch(CHARGING, load1_call, load2_call, 0);
-        MainsReq = 5 * (PowerDeficit + 0.2);
-    }
-
-    // Charge battery, switch off lifters if high load and offpeak
-    else if ((1.8 <= PowerDeficit && PowerDeficit < 3) && offpeak) {
-        load_switch(CHARGING, load1_call, 0, load3_call);
-        MainsReq = 5 * (PowerDeficit - 1);
-    }
-
-    // Battery at -2
-
-    // Small load, supply with mains
-    else if ((0 <= PowerDeficit && PowerDeficit < 2) && battery_charge <= -2) {
-        load_switch(DISCONNECTED, load1_call, load2_call, load3_call);
-        MainsReq = 5 * (PowerDeficit);
-    }
-
-    // Medium load, switch off lights supply with mains
-    else if ((2 <= PowerDeficit && PowerDeficit < 2.8) && battery_charge <= -2) {
-        load_switch(DISCONNECTED, load1_call, load2_call, 0);
-        MainsReq = 5 * (PowerDeficit - 0.8);
-    }
-
-    // High load, switch off lifters supply with mains
-    else if ((2.8 <= PowerDeficit && PowerDeficit <= 4) && battery_charge <= -2) {
-        load_switch(DISCONNECTED, load1_call, 0, load3_call);
-        MainsReq = 5 * (PowerDeficit - 2);
-    }
-
-    // Battery above -2
-
-    // Small load, discharge battery and supply with mains
-    else if ((0 <= PowerDeficit && PowerDeficit < 3) && battery_charge > -2) {
-        load_switch(DISCHARGING, load1_call, load2_call, load3_call);
-        MainsReq = 5 * (PowerDeficit - 1);
-    }
-
-    // Medium load, switch off lights discharge battery and supply with mains
-    else if ((3 <= PowerDeficit && PowerDeficit < 3.8) && battery_charge > -2) {
-        load_switch(DISCHARGING, load1_call, load2_call, 0);
-        MainsReq = 5 * (PowerDeficit - 1.8);
-    }
-
-    // High load, switch off lifters dischage battery and supply with mains
-    else if ((3.8 <= PowerDeficit && PowerDeficit <= 4) && battery_charge > -2) {
-        load_switch(DISCHARGING, load1_call, 0, load3_call);
-        MainsReq = 5 * (PowerDeficit - 3);
-    }
-
-    // If unsure, switch off lifters dont make battery better or worse, supply with mains
+    //else disconnect
     else {
-        load_switch(DISCONNECTED, load1_call, 0, load3_call);
-        MainsReq = 10;
+        battery_state = DISCONNECTED;
     }
+
+    //make decisions on mains status
+
+    if(powerDeficit < 0) {
+        mains_request = 0;
+    }
+    //if mains can supply remaining power
+    else if(powerDeficit <= MAINS_MAX) {
+        mains_request = powerDeficit;
+    }
+
+    //if cant supply remaining power then reduce loads
+    else {
+        //reduceLoad(powerDeficit);
+
+        uint16_t makeUpPower = powerDeficit - MAINS_MAX;
+
+        //switch off smallest load first (load 3)
+        if(makeUpPower <= LOAD3_MAX) {
+            load1 = load1_call;
+            load2 = load2_call;
+            load3 = 0;
+
+            powerDeficit -= LOAD3_MAX;
+        }
+
+        //switch off load 2 to lose the least amount of marks
+        else if(LOAD3_MAX < makeUpPower && makeUpPower<= LOAD2_MAX) {
+            load1 = load1_call;
+            load2 = 0;
+            load3 = load1_call;
+
+            powerDeficit -=  LOAD1_MAX;
+        }
+
+        //switch off load 3 and 2 if cant keep up
+        else if(LOAD2_MAX < makeUpPower && makeUpPower <= (LOAD2_MAX + LOAD3_MAX)) {
+            load1 = load1_call;
+            load2 = 0;
+            load3 = 0;
+
+            powerDeficit -= (LOAD1_MAX + LOAD3_MAX);
+        }
+
+        //worst case scenario
+        else {
+            load1 = 0;
+            load2 = 0;
+            load3 = 0;
+
+            powerDeficit -= (LOAD1_MAX + LOAD2_MAX + LOAD3_MAX);
+        }
+
+        mains_request = powerDeficit;
+    }
+
+    write_outputs();
+
+    prev_time = current_time;
 }
 
-// Set loads to appropriate values
-void load_switch(battery bat, uint8_t l1, uint8_t l2, uint8_t l3) {
-    battery_state = bat;
-    load1 = l1;
-    load2 = l2;
-    load3 = l3;
-}
+
 
 void init_timer() {
     // set to normal mode, no output
@@ -360,23 +429,28 @@ void draw_indicator(uint8_t state) {
 
 void draw_status(char* status, uint16_t colour) {
 
-    rectangle stat;
-    stat.top = 270;
-    stat.bottom = 310;
-    stat.left = 60;
-    stat.right = 180;
-
-    // fill_rectangle(stat, colour);
-
     display.x = 80;
     display.y = 286;
     display_string(status);
+
+    display.x += 10;
+
+    //status colour indicator
+    rectangle ind;
+    ind.top = display.y;
+    ind.left = display.x;
+    ind.bottom = display.y + 7;
+    ind.right = display.x + 7;
+
+    fill_rectangle(ind, colour);
 }
 
 void draw_screen() {
 
     // clear changing area of the screen
     clear_screen();
+
+    char temp[8];
 
     // display wind capacity
     display.y = 20;
@@ -403,7 +477,7 @@ void draw_screen() {
     display_string("Mains:");
 
     display.x = COLUMN;
-    draw_bar(mains_capacity, GREEN);
+    draw_bar(mains_request, GREEN);
 
     // display battery status
     display.y = 80;
@@ -413,9 +487,12 @@ void draw_screen() {
 
     display.x = COLUMN;
     draw_battery_state(battery_state);
+    
 
     display.x = COLUMN + 15;
-    draw_bar(battery_charge, GREEN);
+    //draw_bar(battery_charge, GREEN);
+    itoa(battery_charge, temp, 10);
+    display_string(temp);
 
     // display call 1
     display.y = 120;
@@ -453,6 +530,15 @@ void draw_screen() {
     display.x = COLUMN * 1.5;
     draw_indicator(load3);
 
+    //display total load
+    display.y = 180;
+
+    display.x = LINDENT;
+    display_string("Total Load:");
+
+    display.x = COLUMN;
+    draw_bar(total_load, GREEN);
+
     // display busbar voltage
     display.y = 200;
 
@@ -478,100 +564,21 @@ void draw_screen() {
     display_string("Busbar Power:");
 
     uint16_t busbar_power = 0;
-    busbar_power = (busbar_current * busbar_voltage) / 1024;
+    busbar_power = ((busbar_current << 2) * (busbar_voltage << 2));
 
     display.x = COLUMN;
     draw_bar(busbar_power, GREEN);
 
     // draw status box
-    draw_status("Good", GREEN);
+    //draw_status("Good", GREEN);
+    draw_status(*statusMessage, statusColour);
 }
 
-/*
-void draw_screen() {
-
-    //setup refresh area rectangle
-    rectangle refreshArea;
-    refreshArea.top = 0;
-    refreshArea.left = 0;
-    refreshArea.bottom = LCDHEIGHT / 2;
-    refreshArea.right = LCDWIDTH;
-
-    //clear screen
-    //clear_screen();
-
-    //only refresh changed area
-    //fill_rectangle(refreshArea, display.background);
-
-    //set display cursor to top left
-    display.x = 0;
-    display.y = 0;
-
-    int i;
-
-    for(i=0; i<8; i++) {
-
-        char num[6];
-
-        //output as raw 10-bit
-        uint16_t temp = read_adc(i);
-        itoa(temp, num, 10);
-
-        //output as float voltage
-
-        //float temp = read_adc(i) * ATOMV;
-        //itoa(temp, num, 10);
-
-        //write to display
-        display_string("ADC: ");
-        display_string(num);
-        //display_string(" mV");
-
-        display.x = HALF_WIDTH;
-        draw_bar(temp, GREEN);
-
-        //move display cursor to start of next line
-        display.y += 10;
-        display.x = 0;
-    }
-
-    for(i=0; i<4; i++) {
-
-        char num[1];
-        itoa(i, num, 10);
-
-        display_string("Indicator ");
-        display_string(num);
-        display_string(": ");
-
-        display.x = HALF_WIDTH;
-        //draw_indicator(state);
-
-        display.y += 10;
-        display.x = 0;
-    }
-
-    display_string("Battery State:");
-    display.x = HALF_WIDTH;
-
-    draw_battery_state(battery_state);
-
-
-
-    display.y += 20;
-    display.x = 0;
-
-    char num[8];
-    ltoa(millis_timer, num, 10);
-
-    display_string("Timer Value: ");
-    display_string(num);
-}*/
 
 void read_inputs(void) {
 
     // read analog values
-    mains_capacity = get_mains_capacity();
+    //mains_capacity = get_mains_capacity();
 
     busbar_voltage = get_busbar_voltage();
     busbar_current = get_busbar_current();
