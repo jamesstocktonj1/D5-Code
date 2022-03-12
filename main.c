@@ -49,13 +49,23 @@
 #define SOLAR_MAX 256
 #define MAINS_MAX 512
 
+#define BUSI_MAX 1024
+#define BUSV_MAX 10
+
 #define CHARGE_TO 120000
 #define DISCHARGE_TO -1200000
+
+//port adjustments
+#define WIND_CONST 0.75
+#define SOLAR_CONST 0.25
+#define MAINS_CONST 0.5
+
+#define BUSI_CONST 1
+#define BUSV_CONST 9.77
 
 #define LOOP_SPEED 
 
 // TODO
-// implement graphics for power
 // implement load names
 
 // graphics functions
@@ -193,7 +203,7 @@ void algorithm(void) {
     busbar_current = get_busbar_current();
 
     //calculate difference between actual busbar current and what was requested (previous values)
-    uint16_t mainsDeficit = (mains_request == 0) ? 0 : busbar_current - (mains_request + wind_capacity + solar_capacity);
+    uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
     uint16_t actualMainsCapacity = mains_request - mainsDeficit;
 
     //decide if off peak time (batter should charge)
@@ -222,7 +232,7 @@ void algorithm(void) {
     battery_state = DISCONNECTED;
     mains_request = 0;
 
-    uint16_t renewableSum = wind_capacity + solar_capacity;
+    uint16_t renewableSum = (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST);
 
     //calculate power required (excess power if negative)
     int16_t powerDeficit = loadSum - renewableSum;
@@ -491,7 +501,7 @@ void draw_screen() {
 
     display.x = COLUMN + 15;
     //draw_bar(battery_charge, GREEN);
-    itoa(battery_charge, temp, 10);
+    ltoa(battery_charge, temp, 10);
     display_string(temp);
 
     // display call 1
