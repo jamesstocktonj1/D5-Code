@@ -37,7 +37,11 @@ uint16_t get_wind_capacity(void);
 uint16_t get_solar_capacity(void);
 
 //battery functions
-typedef enum {CHARGING, DISCHARGING, DISCONNECTED} battery;
+typedef enum {
+    CHARGING, 
+    DISCHARGING, 
+    DISCONNECTED
+} battery;
 void set_battery_state(battery state);
 
 //digital output functions
