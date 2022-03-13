@@ -39,6 +39,9 @@ uint16_t get_busbar_current(void);
 uint16_t get_wind_capacity(void);
 uint16_t get_solar_capacity(void);
 
+//digital output functions
+void set_mains_request(uint16_t value);
+
 //battery functions
 typedef enum {
     CHARGING, 
@@ -53,9 +56,6 @@ void set_battery_discharge(uint8_t state);
 void set_load1(uint8_t state);
 void set_load2(uint8_t state);
 void set_load3(uint8_t state);
-
-//digital output functions
-void set_mains_request(uint16_t value);
 
 //digital input functions
 uint8_t get_load1(void);
