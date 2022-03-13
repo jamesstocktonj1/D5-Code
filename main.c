@@ -59,7 +59,8 @@
 //port adjustments
 #define WIND_CONST 0.75
 #define SOLAR_CONST 0.25
-#define MAINS_CONST 0.5
+
+#define MAINS_CONST 0.25
 
 #define BUSI_CONST 1
 #define BUSV_CONST 9.77
@@ -598,7 +599,7 @@ void draw_screen() {
     display_string("Busbar Power:");
 
     uint16_t busbar_power = 0;
-    busbar_power = ((busbar_current << 2) * (busbar_voltage << 2));
+    busbar_power = ((busbar_current >> 2) * (busbar_voltage >> 2));
 
     display.x = COLUMN;
     draw_bar(busbar_power, GREEN);
@@ -649,6 +650,9 @@ void write_outputs() {
     set_load3(load3);
 
     set_battery_state(battery_state);
+
+    uint8_t value = MAINS_CONST * mains_request;
+    set_mains_request(value);
 }
 
 void splash_screen() {
