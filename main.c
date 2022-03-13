@@ -193,7 +193,6 @@ void algorithm(void) {
 
     //store current time
     uint32_t current_time = millis_timer;
-
     uint32_t delta_time = current_time - prev_time;
 
     if (battery_state == CHARGING) {
@@ -207,7 +206,6 @@ void algorithm(void) {
 
     //calculate difference between actual busbar current and what was requested (previous values)
     uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
-    uint16_t actualMainsCapacity = mains_request - mainsDeficit;
 
     //decide if off peak time (batter should charge)
     //uint8_t offpeak = ((current_time <= (8 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
@@ -257,6 +255,8 @@ void algorithm(void) {
         //batteryMessage = "Charging";
         strcpy(batteryMessage, "Charging");
         statusColour = GREEN;
+
+        initial_charge = (battery_charge > CHARGE_TO);
     }
 
     //discharging if:
@@ -265,7 +265,6 @@ void algorithm(void) {
     else if ((powerDeficit > AMP && battery_charge > DISCHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge > 15000)) {
         battery_state = DISCHARGING;
         powerDeficit -= AMP;
-        initial_charge = 1;
 
         //batteryMessage = 'Discharging';
         strcpy(batteryMessage, "Discharging");
@@ -281,6 +280,7 @@ void algorithm(void) {
 
     if (powerDeficit < 0) {
         mains_request = 0;
+        strcpy(mainsMessage, "");
     }
     //if mains can supply remaining power
     else if (powerDeficit <= MAINS_MAX) {
@@ -341,6 +341,7 @@ void algorithm(void) {
         mains_request = powerDeficit;
 
         statusColour = RED;
+        strcpy(mainsMessage, "Mains Overload!");
     }
 
     write_outputs();
