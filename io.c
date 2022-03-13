@@ -57,11 +57,6 @@ uint16_t read_adc(uint8_t channel) {
 }
 
 
-uint16_t get_mains_capacity() {
-
-    return read_adc(MAINS_CAPACITY);
-}
-
 uint16_t get_busbar_voltage() {
 
     return read_adc(BUSBAR_VOLTAGE);

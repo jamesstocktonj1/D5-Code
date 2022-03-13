@@ -6,11 +6,10 @@
 
 //pin definitions
 //PORTA
-#define MAINS_CAPACITY 0
-#define BUSBAR_VOLTAGE 1
-#define BUSBAR_CURRENT 2
-#define WIND_CAPACITY 3
-#define SOLAR_CAPACITY 4
+#define BUSBAR_VOLTAGE 0
+#define BUSBAR_CURRENT 1
+#define WIND_CAPACITY 2
+#define SOLAR_CAPACITY 3
 
 //PORTC
 #define CHARGE_BATTERY 0
