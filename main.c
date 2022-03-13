@@ -61,11 +61,12 @@
 #define SOLAR_CONST 0.25
 
 #define MAINS_CONST 0.25
+#define MAINS_FEEDBACK 1.0
 
 #define BUSI_CONST 1
 #define BUSV_CONST 9.77
 
-#define LOOP_SPEED 
+#define LOOP_SPEED 200
 
 // TODO
 // implement load names
@@ -221,9 +222,11 @@ void algorithm(void) {
     loadSum += (load2_call) ? LOAD2_MAX : 0;
     loadSum += (load3_call) ? LOAD3_MAX : 0;
 
+    //take a copy of the pre-feedback load
     total_load = loadSum + 0;
 
-    loadSum += mainsDeficit;
+    //adding the difference in busbar current to the loads so that the difference in current is made up (or loads taken out)
+    loadSum += mainsDeficit * MAINS_FEEDBACK;
 
     //set default values for loads
     load1 = load1_call;
