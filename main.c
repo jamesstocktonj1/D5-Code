@@ -196,6 +196,7 @@ void algorithm(void) {
     //store current time
     uint32_t current_time = millis_timer;
     uint32_t delta_time = current_time - prev_time;
+    uint32_t current_second = current_time / 1000;
 
     prev_time = current_time;
 
@@ -209,7 +210,8 @@ void algorithm(void) {
     busbar_current = get_busbar_current();
 
     //calculate difference between actual busbar current and what was requested (previous values)
-    uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
+    uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request);// + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
+    uint16_t mainsDeficit = 0;
 
     //decide if off peak time (batter should charge)
     //uint8_t offpeak = ((current_time <= (8 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
@@ -223,6 +225,8 @@ void algorithm(void) {
     loadSum += (load1_call) ? LOAD1_MAX : 0;
     loadSum += (load2_call) ? LOAD2_MAX : 0;
     loadSum += (load3_call) ? LOAD3_MAX : 0;
+
+    loadSum += mainsDeficit * MAINS_FEEDBACK;
 
     //take a copy of the pre-feedback load
     total_load = loadSum + 0;
@@ -254,7 +258,7 @@ void algorithm(void) {
     //time < 7 and charge < 2
     //time > 22 and charge < 0
     //spare renewables
-    if ((current_time < (7 * 60 * 1000) && battery_charge < CHARGE_TO && ~initial_charge) || (current_time > (22 * 60 * 1000) && battery_charge < CHARGE_TO) || (powerExcess > 0)) {
+    if ((current_second < (7 * 60) && battery_charge < CHARGE_TO && ~initial_charge) || (current_second > (22 * 60) && battery_charge < CHARGE_TO) || (powerExcess > 0)) {
         battery_state = CHARGING;
         powerDeficit += AMP;
 
