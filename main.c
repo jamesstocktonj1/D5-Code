@@ -4,6 +4,7 @@
 #include "lib/ili934x.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <avr/interrupt.h>
 #include "io.h"
 
@@ -108,10 +109,12 @@ uint8_t load1, load2, load3;
 battery battery_state = DISCONNECTED;
 int32_t battery_charge;
 
+uint8_t initial_charge = 0;
 uint32_t prev_time;
 
 
-char *statusMessage[20];
+char batteryMessage[12];
+char mainsMessage[12];
 uint16_t statusColour;
 
 ISR(TIMER0_OVF_vect) {
@@ -193,12 +196,12 @@ void algorithm(void) {
 
     uint32_t delta_time = current_time - prev_time;
 
-    if(battery_state == CHARGING) {
+    if (battery_state == CHARGING) {
         battery_charge += delta_time;
     }
-    if(battery_state == DISCHARGING) {
+    if (battery_state == DISCHARGING) {
         battery_charge -= delta_time;
-    } 
+    }
 
     busbar_current = get_busbar_current();
 
@@ -238,7 +241,7 @@ void algorithm(void) {
     int16_t powerDeficit = loadSum - renewableSum;
     uint16_t powerExcess = (powerDeficit < 0) ? (powerDeficit * -1) : 0;
 
-
+    
 
 
     //make decisions on battery status
@@ -247,17 +250,26 @@ void algorithm(void) {
     //time < 7 and charge < 2
     //time > 22 and charge < 0
     //spare renewables
-    if((current_time < (7 * 60 * 1000) && battery_charge < CHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge < CHARGE_TO) || (powerExcess > 0)) {
+    if ((current_time < (7 * 60 * 1000) && battery_charge < CHARGE_TO && ~initial_charge) || (current_time > (22 * 60 * 1000) && battery_charge < CHARGE_TO) || (powerExcess > 0)) {
         battery_state = CHARGING;
         powerDeficit += AMP;
+
+        //batteryMessage = "Charging";
+        strcpy(batteryMessage, "Charging");
+        statusColour = GREEN;
     }
-    
+
     //discharging if:
     //deficit < 1 and charge > -2
     //t > 22 and charge > 1
-    else if((powerDeficit > AMP && battery_charge > DISCHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge > 15000)) {
+    else if ((powerDeficit > AMP && battery_charge > DISCHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge > 15000)) {
         battery_state = DISCHARGING;
         powerDeficit -= AMP;
+        initial_charge = 1;
+
+        //batteryMessage = 'Discharging';
+        strcpy(batteryMessage, "Discharging");
+        statusColour = (battery_charge < 0) ? ORANGE : GREEN;
     }
 
     //else disconnect
@@ -267,12 +279,21 @@ void algorithm(void) {
 
     //make decisions on mains status
 
-    if(powerDeficit < 0) {
+    if (powerDeficit < 0) {
         mains_request = 0;
     }
     //if mains can supply remaining power
-    else if(powerDeficit <= MAINS_MAX) {
+    else if (powerDeficit <= MAINS_MAX) {
         mains_request = powerDeficit;
+
+        //mainsMessage = (batteryMessage == "Charging" || batteryMessage == "Discharging") ? " with Mains" : "Mains";
+        if(battery_state == DISCONNECTED) {
+            strcpy(mainsMessage, "Mains");
+        }
+        else {
+            strcpy(mainsMessage, " with Mains");
+        }
+        
     }
 
     //if cant supply remaining power then reduce loads
@@ -282,7 +303,7 @@ void algorithm(void) {
         uint16_t makeUpPower = powerDeficit - MAINS_MAX;
 
         //switch off smallest load first (load 3)
-        if(makeUpPower <= LOAD3_MAX) {
+        if (makeUpPower <= LOAD3_MAX) {
             load1 = load1_call;
             load2 = load2_call;
             load3 = 0;
@@ -291,16 +312,16 @@ void algorithm(void) {
         }
 
         //switch off load 2 to lose the least amount of marks
-        else if(LOAD3_MAX < makeUpPower && makeUpPower<= LOAD2_MAX) {
+        else if (LOAD3_MAX < makeUpPower && makeUpPower <= LOAD2_MAX) {
             load1 = load1_call;
             load2 = 0;
             load3 = load1_call;
 
-            powerDeficit -=  LOAD1_MAX;
+            powerDeficit -= LOAD1_MAX;
         }
 
         //switch off load 3 and 2 if cant keep up
-        else if(LOAD2_MAX < makeUpPower && makeUpPower <= (LOAD2_MAX + LOAD3_MAX)) {
+        else if (LOAD2_MAX < makeUpPower && makeUpPower <= (LOAD2_MAX + LOAD3_MAX)) {
             load1 = load1_call;
             load2 = 0;
             load3 = 0;
@@ -318,6 +339,8 @@ void algorithm(void) {
         }
 
         mains_request = powerDeficit;
+
+        statusColour = RED;
     }
 
     write_outputs();
@@ -497,7 +520,7 @@ void draw_screen() {
 
     display.x = COLUMN;
     draw_battery_state(battery_state);
-    
+
 
     display.x = COLUMN + 15;
     //draw_bar(battery_charge, GREEN);
@@ -508,7 +531,7 @@ void draw_screen() {
     display.y = 120;
 
     display.x = LINDENT;
-    display_string("Call 1:");
+    display_string("Pumps:");
 
     display.x = COLUMN;
     draw_indicator(load1_call);
@@ -520,7 +543,7 @@ void draw_screen() {
     display.y = 140;
 
     display.x = LINDENT;
-    display_string("Call 2:");
+    display_string("Lifts:");
 
     display.x = COLUMN;
     draw_indicator(load2_call);
@@ -532,7 +555,7 @@ void draw_screen() {
     display.y = 160;
 
     display.x = LINDENT;
-    display_string("Call 3:");
+    display_string("Lights:");
 
     display.x = COLUMN;
     draw_indicator(load3_call);
@@ -581,7 +604,22 @@ void draw_screen() {
 
     // draw status box
     //draw_status("Good", GREEN);
-    draw_status(*statusMessage, statusColour);
+
+    display.y = 280;
+
+    display.x = LINDENT;
+
+    rectangle ind;
+    ind.top = display.y;
+    ind.left = display.x;
+    ind.bottom = display.y + 7;
+    ind.right = display.x + 7;
+
+    fill_rectangle(ind, statusColour);
+
+    display.x = COLUMN;
+    display_string(batteryMessage);
+    display_string(mainsMessage);
 }
 
 
