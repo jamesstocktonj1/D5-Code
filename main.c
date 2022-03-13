@@ -197,6 +197,8 @@ void algorithm(void) {
     uint32_t current_time = millis_timer;
     uint32_t delta_time = current_time - prev_time;
 
+    prev_time = current_time;
+
     if (battery_state == CHARGING) {
         battery_charge += delta_time;
     }
@@ -349,8 +351,6 @@ void algorithm(void) {
     }
 
     write_outputs();
-
-    prev_time = current_time;
 }
 
 
@@ -606,11 +606,21 @@ void draw_screen() {
 
     display.x = COLUMN;
     draw_bar(busbar_power, GREEN);
+    
+    //display current time
+    display.y = 260;
+    uint16_t curTime = millis_timer / 1000;
+    ltoa(curTime, temp, 10);
+
+    display.x = LINDENT;
+    display_string("Time: ");
+
+    display.x = COLUMN;
+    display_string(temp);
+    display_string(" s");
 
     // draw status box
-    //draw_status("Good", GREEN);
-
-    display.y = 280;
+    display.y = 300;
 
     display.x = LINDENT;
 
