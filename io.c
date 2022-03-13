@@ -6,12 +6,24 @@
 
 
 void init_pins() {
-    int i;
+    
+    //set digital outputs PORTC
+    DDRC |= _BV(CHARGE_BATTERY);
+    DDRC |= _BV(DISCHARGE_BATTERY);
+    DDRC |= _BV(SWITCH_LOAD1);
+    DDRC |= _BV(SWITCH_LOAD2);
+    DDRC |= _BV(SWITCH_LOAD3);
 
-    //set pins 0-7 on port C to outputs
-    for (i = 0; i < 8; i++) {
-        DDRC |= _BV(i);
-    }
+    //set digital inputs PORTC
+    DDRC &= ~_BV(CALL_LOAD1);
+    DDRC &= ~_BV(CALL_LOAD2);
+    DDRC &= ~_BV(CALL_LOAD3);
+
+    //set digital (dac) outputs PORTA
+    DDRA |= _BV(MAINS_REQ0);
+    DDRA |= _BV(MAINS_REQ1);
+    DDRA |= _BV(MAINS_REQ2);
+    DDRA |= _BV(MAINS_REQ3);
 }
 
 
@@ -75,6 +87,14 @@ uint16_t get_wind_capacity() {
 uint16_t get_solar_capacity() {
 
     return read_adc(SOLAR_CAPACITY);
+}
+
+void set_mains_request(uint16_t value) {
+
+    //keep first 4 bits of current PORTA
+    //write value to last 4 bits
+    PORTA = (PORTA & 0x0f) | ((value << 4) & 0xf0);
+
 }
 
 
