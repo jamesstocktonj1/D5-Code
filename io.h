@@ -16,14 +16,14 @@
 #define MAINS_REQ3 7
 
 //PORTC
-#define CHARGE_BATTERY 0
-#define DISCHARGE_BATTERY 1
-#define SWITCH_LOAD1 2
+#define CHARGE_BATTERY 1
+#define DISCHARGE_BATTERY 0
+#define SWITCH_LOAD1 4
 #define SWITCH_LOAD2 3
-#define SWITCH_LOAD3 4
-#define CALL_LOAD1 5
+#define SWITCH_LOAD3 2
+#define CALL_LOAD1 7
 #define CALL_LOAD2 6
-#define CALL_LOAD3 7
+#define CALL_LOAD3 5
 
 //initialise digital pins
 void init_pins(void);
