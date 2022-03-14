@@ -54,11 +54,12 @@
 #define BUSV_MAX 10
 
 #define CHARGE_TO 120000
+#define FINAL_CHARGE 20000
 #define DISCHARGE_TO -1200000
 
 //port adjustments
-#define WIND_CONST 0.75
-#define SOLAR_CONST 0.25
+#define WIND_CONST 1.4
+#define SOLAR_CONST 1.42
 
 #define MAINS_CONST 0.25
 #define MAINS_FEEDBACK 1.0
@@ -211,7 +212,7 @@ void algorithm(void) {
 
     //calculate difference between actual busbar current and what was requested (previous values)
     uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request);// + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
-    uint16_t mainsDeficit = 0;
+    //uint16_t mainsDeficit = 0;
 
     //decide if off peak time (batter should charge)
     //uint8_t offpeak = ((current_time <= (8 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
@@ -240,7 +241,7 @@ void algorithm(void) {
     load3 = load3_call;
 
     //set default values for mains and battery
-    battery_state = DISCONNECTED;
+    //battery_state = DISCONNECTED;
     mains_request = 0;
 
     uint16_t renewableSum = (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST);
@@ -258,7 +259,7 @@ void algorithm(void) {
     //time < 7 and charge < 2
     //time > 22 and charge < 0
     //spare renewables
-    if ((current_second < (7 * 60) && battery_charge < CHARGE_TO && ~initial_charge) || (current_second > (22 * 60) && battery_charge < CHARGE_TO) || (powerExcess > 0)) {
+    if ((current_second < (8 * 60) && battery_charge < CHARGE_TO) || (current_second > (22 * 60) && battery_charge < FINAL_CHARGE) || (powerExcess > 0)) {
         battery_state = CHARGING;
         powerDeficit += AMP;
 
@@ -266,13 +267,13 @@ void algorithm(void) {
         strcpy(batteryMessage, "Charging");
         statusColour = GREEN;
 
-        initial_charge = (battery_charge > CHARGE_TO);
+        //initial_charge = (battery_charge > CHARGE_TO) ? 0 : 1;
     }
 
     //discharging if:
     //deficit < 1 and charge > -2
     //t > 22 and charge > 1
-    else if ((powerDeficit > AMP && battery_charge > DISCHARGE_TO) || (current_time > (22 * 60 * 1000) && battery_charge > 15000)) {
+    else if ((powerDeficit > AMP && battery_charge > DISCHARGE_TO && current_second > (8 * 60)) || (current_second > (22 * 60) && battery_charge > 15000)) {
         battery_state = DISCHARGING;
         powerDeficit -= AMP;
 
@@ -500,6 +501,9 @@ void draw_screen() {
     display.x = LINDENT;
     display_string("Wind:");
 
+    ltoa(wind_capacity, temp, 10);
+    display_string(temp);
+
     display.x = COLUMN;
     draw_bar(wind_capacity, GREEN);
 
@@ -509,6 +513,9 @@ void draw_screen() {
     display.x = LINDENT;
     display_string("Solar:");
 
+    ltoa(solar_capacity, temp, 10);
+    display_string(temp);
+
     display.x = COLUMN;
     draw_bar(solar_capacity, GREEN);
 
@@ -517,6 +524,9 @@ void draw_screen() {
 
     display.x = LINDENT;
     display_string("Mains:");
+
+    ltoa(mains_request, temp, 10);
+    display_string(temp);
 
     display.x = COLUMN;
     draw_bar(mains_request, GREEN);
@@ -606,7 +616,7 @@ void draw_screen() {
     display_string("Busbar Power:");
 
     uint16_t busbar_power = 0;
-    busbar_power = ((busbar_current >> 2) * (busbar_voltage >> 2));
+    busbar_power = ((busbar_current >> 5) * (busbar_voltage >> 5));
 
     display.x = COLUMN;
     draw_bar(busbar_power, GREEN);
