@@ -54,14 +54,14 @@
 #define BUSV_MAX 10
 
 #define CHARGE_TO 120000
-#define FINAL_CHARGE 20000
+#define FINAL_CHARGE 5000
 #define DISCHARGE_TO -1200000
 
 //port adjustments
 #define WIND_CONST 1.4
 #define SOLAR_CONST 1.42
 
-#define MAINS_CONST 0.25
+#define MAINS_CONST 0.03125
 #define MAINS_FEEDBACK 1.0
 
 #define BUSI_CONST 1
@@ -223,17 +223,28 @@ void algorithm(void) {
     //calculate required load and sum of renewable sources
     //uint16_t loadSum = load1_call + load2_call + load3_call + mainsDeficit;
     uint16_t loadSum = 0;
-    loadSum += (load1_call) ? LOAD1_MAX : 0;
-    loadSum += (load2_call) ? LOAD2_MAX : 0;
-    loadSum += (load3_call) ? LOAD3_MAX : 0;
 
-    loadSum += mainsDeficit * MAINS_FEEDBACK;
+    if(load1_call) {
+        loadSum += LOAD1_MAX;
+    }
+    if(load2_call) {
+        loadSum += LOAD2_MAX;
+    }
+    if(load3_call) {
+        loadSum += LOAD3_MAX;
+    }
+
+    //loadSum += (load1_call) ? LOAD1_MAX : 0;
+    //loadSum += (load2_call) ? LOAD2_MAX : 0;
+    //loadSum += (load3_call) ? LOAD3_MAX : 0;
+
+    //loadSum += mainsDeficit * MAINS_FEEDBACK;
 
     //take a copy of the pre-feedback load
     total_load = loadSum + 0;
 
     //adding the difference in busbar current to the loads so that the difference in current is made up (or loads taken out)
-    loadSum += mainsDeficit * MAINS_FEEDBACK;
+    //loadSum += mainsDeficit * MAINS_FEEDBACK;
 
     //set default values for loads
     load1 = load1_call;
