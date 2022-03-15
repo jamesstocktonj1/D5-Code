@@ -54,11 +54,11 @@
 #define BUSV_MAX 10
 
 #define CHARGE_TO 120000
-#define FINAL_CHARGE 5000
-#define DISCHARGE_TO -1200000
+#define FINAL_CHARGE 20000
+#define DISCHARGE_TO -100000
 
 //port adjustments
-#define WIND_CONST 1.4
+#define WIND_CONST 1.42
 #define SOLAR_CONST 1.42
 
 #define MAINS_CONST 0.03125
@@ -107,6 +107,8 @@ uint8_t load1_call, load2_call, load3_call;
 uint16_t mains_request;
 uint16_t total_load;
 
+uint16_t renewableSum;
+
 // digital output values
 uint8_t load1, load2, load3;
 battery battery_state = DISCONNECTED;
@@ -134,8 +136,9 @@ int main() {
     clear_screen();
 
     // initialise io (io.h)
-    init_adc();
+    
     init_pins();
+    init_adc();
 
     // init timer
     init_timer();
@@ -180,6 +183,7 @@ int main() {
 
         // state = !
         //state;
+        //read_inputs();
         draw_screen();
         algorithm();
         _delay_ms(250);
@@ -209,6 +213,7 @@ void algorithm(void) {
     }
 
     busbar_current = get_busbar_current();
+    
 
     //calculate difference between actual busbar current and what was requested (previous values)
     uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request);// + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
@@ -219,6 +224,8 @@ void algorithm(void) {
 
     //read in new values
     read_inputs();
+
+    wind_capacity = get_wind_capacity();
 
     //calculate required load and sum of renewable sources
     //uint16_t loadSum = load1_call + load2_call + load3_call + mainsDeficit;
@@ -255,7 +262,9 @@ void algorithm(void) {
     //battery_state = DISCONNECTED;
     mains_request = 0;
 
-    uint16_t renewableSum = (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST);
+    renewableSum = (solar_capacity + wind_capacity + 0) * SOLAR_CONST;
+    //renewableSum += (wind_capacity * WIND_CONST); 
+    //renewableSum += (solar_capacity * SOLAR_CONST);
 
     //calculate power required (excess power if negative)
     int16_t powerDeficit = loadSum - renewableSum;
@@ -284,7 +293,7 @@ void algorithm(void) {
     //discharging if:
     //deficit < 1 and charge > -2
     //t > 22 and charge > 1
-    else if ((powerDeficit > AMP && battery_charge > DISCHARGE_TO && current_second > (8 * 60)) || (current_second > (22 * 60) && battery_charge > 15000)) {
+    else if ((powerDeficit > AMP && battery_charge > DISCHARGE_TO && current_second > (8 * 60)) || (current_second < (22 * 60) && battery_charge > 15000)) {
         battery_state = DISCHARGING;
         powerDeficit -= AMP;
 
@@ -296,7 +305,9 @@ void algorithm(void) {
     //else disconnect
     else {
         battery_state = DISCONNECTED;
+        strcpy(batteryMessage, "");
     }
+
 
     //make decisions on mains status
 
@@ -512,7 +523,7 @@ void draw_screen() {
     display.x = LINDENT;
     display_string("Wind:");
 
-    ltoa(wind_capacity, temp, 10);
+    //ltoa(wind_capacity, temp, 10);
     display_string(temp);
 
     display.x = COLUMN;
@@ -671,8 +682,9 @@ void read_inputs(void) {
     busbar_voltage = get_busbar_voltage();
     busbar_current = get_busbar_current();
 
-    wind_capacity = get_wind_capacity();
+    
     solar_capacity = get_solar_capacity();
+    wind_capacity = get_wind_capacity();
 
     // read digital values
     load1_call = get_load1();
