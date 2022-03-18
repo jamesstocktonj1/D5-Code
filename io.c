@@ -32,7 +32,7 @@ void init_adc() {
     int i;
 
     //initialise pins A0-A8 as inputs
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 4; i++) {
         DDRA &= ~_BV(i);
     }
 
@@ -81,7 +81,7 @@ uint16_t get_busbar_current() {
 
 uint16_t get_wind_capacity() {
 
-    return read_adc(WIND_CAPACITY);
+   return read_adc(WIND_CAPACITY);
 }
 
 uint16_t get_solar_capacity() {
