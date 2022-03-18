@@ -151,39 +151,6 @@ int main() {
 
     while (1) {
 
-        /*
-        if((millis_timer % 1000) == 0) {
-
-            //state = !state;
-            //set_load1(state);
-
-            switch(battery_state) {
-
-                case CHARGING:
-                    battery_state = DISCHARGING;
-                    break;
-
-                case DISCHARGING:
-                    battery_state = DISCONNECTED;
-                    break;
-
-                default:
-                    battery_state = CHARGING;
-                    break;
-            }
-        }
-        */
-
-        if ((millis_timer % SCREEN_REFRESH) == 0) {
-
-            //read_inputs();
-            //draw_screen();
-            // write algorithm results
-        }
-
-        // state = !
-        //state;
-        //read_inputs();
         draw_screen();
         algorithm();
         _delay_ms(250);
@@ -217,10 +184,7 @@ void algorithm(void) {
 
     //calculate difference between actual busbar current and what was requested (previous values)
     uint16_t mainsDeficit = (mains_request == 0 || (busbar_current * BUSI_CONST) > mains_request) ? 0 : (busbar_current * BUSI_CONST) - (mains_request);// + (wind_capacity * WIND_CONST) + (solar_capacity * SOLAR_CONST));
-    //uint16_t mainsDeficit = 0;
 
-    //decide if off peak time (batter should charge)
-    //uint8_t offpeak = ((current_time <= (8 * 60 * 1000) && battery_charge <= 2) || (current_time >= (22 * 60 * 1000) && battery_charge < 0));
 
     //read in new values
     read_inputs();
@@ -228,8 +192,7 @@ void algorithm(void) {
     wind_capacity = get_wind_capacity();
 
     //calculate required load and sum of renewable sources
-    //uint16_t loadSum = load1_call + load2_call + load3_call + mainsDeficit;
-    uint16_t loadSum = 0;
+    uint16_t loadSum = load1_call + load2_call + load3_call + mainsDeficit;
 
     if(load1_call) {
         loadSum += LOAD1_MAX;
@@ -241,17 +204,11 @@ void algorithm(void) {
         loadSum += LOAD3_MAX;
     }
 
-    //loadSum += (load1_call) ? LOAD1_MAX : 0;
-    //loadSum += (load2_call) ? LOAD2_MAX : 0;
-    //loadSum += (load3_call) ? LOAD3_MAX : 0;
-
-    //loadSum += mainsDeficit * MAINS_FEEDBACK;
-
     //take a copy of the pre-feedback load
     total_load = loadSum + 0;
 
     //adding the difference in busbar current to the loads so that the difference in current is made up (or loads taken out)
-    //loadSum += mainsDeficit * MAINS_FEEDBACK;
+    loadSum += mainsDeficit * MAINS_FEEDBACK;
 
     //set default values for loads
     load1 = load1_call;
@@ -262,9 +219,8 @@ void algorithm(void) {
     //battery_state = DISCONNECTED;
     mains_request = 0;
 
-    renewableSum = (solar_capacity + wind_capacity + 0) * SOLAR_CONST;
-    //renewableSum += (wind_capacity * WIND_CONST); 
-    //renewableSum += (solar_capacity * SOLAR_CONST);
+    //calculate the sum of renewable sources
+    renewableSum = (solar_capacity + wind_capacity) * SOLAR_CONST;
 
     //calculate power required (excess power if negative)
     int16_t powerDeficit = loadSum - renewableSum;
@@ -705,6 +661,7 @@ void write_outputs() {
     set_mains_request(value);
 }
 
+//splash screen with a large letter D
 void splash_screen() {
 
     rectangle a;
