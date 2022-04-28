@@ -35,6 +35,5 @@
 *.hex
 *.bat
 
-makefile
 *.txt
 include/joesalgo.h
