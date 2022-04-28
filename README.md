@@ -1,1 +1,2 @@
 # D5-Code
+This project is part of our ELEC2217, D5 Smart Meter project. The algorithm was written by Joseph Butterworth which I then ported onto the Il Matto AVR development board. Our final test scored 80% which was the highest in the year.
