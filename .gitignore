@@ -37,4 +37,4 @@
 
 makefile
 *.txt
-joesalgo.h
+include/joesalgo.h
