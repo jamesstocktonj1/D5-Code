@@ -25,12 +25,12 @@ int main() {
             //write value to resistor DAC
             set_mains_request(i);
 
-            clear_screen();
-            itoa(i, temp, 10);
-            display_string("Value: ");
-            display_string(temp);
+            //clear_screen();
+            //itoa(i, temp, 10);
+            //display_string("Value: ");
+            //display_string(temp);
 
-            _delay_ms(5000);
+            _delay_ms(100);
         }
     }
 }
