@@ -1,4 +1,7 @@
+#ifndef ALGO_H
+#define ALGO_H
 
+#include "io.h"
 
 #define AMP 256
 #define HALF_AMP 128
@@ -167,3 +170,4 @@ void algorithm(void) {
         mains_request = powerDeficit;
     }
 }
+#endif
